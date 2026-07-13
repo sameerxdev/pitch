@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "PITCH",
+    "slug": "pitch-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "pitch",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#1A5C38"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.pitchpk.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PITCH needs camera access to scan player QR codes.",
+        "NSLocationWhenInUseUsageDescription": "PITCH uses your location to show nearby cricket grounds.",
+        "NSPhotoLibraryUsageDescription": "PITCH needs photo library access to upload ground and review photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1A5C38"
+      },
+      "package": "com.pitchpk.app",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-location",
+      [
+        "expo-notifications",
+        {
+          "color": "#1A5C38",
+          "sounds": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
