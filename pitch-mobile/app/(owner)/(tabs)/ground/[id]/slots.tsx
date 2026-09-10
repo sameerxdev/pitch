@@ -2,21 +2,13 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
-import { getOwnerGrounds } from "@/data/ownerDemo";
-import { useOwnerDemoStore } from "@/stores/ownerDemoStore";
+import { useOwnerGround } from "@/hooks/useOwner";
 import { GroundSlotManager } from "@/components/slot/GroundSlotManager";
 
 export default function OwnerGroundSlotsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const demoVersion = useOwnerDemoStore((s) => s.demoVersion);
-
-  const { data: grounds } = useQuery({
-    queryKey: ["owner-grounds", demoVersion],
-    queryFn: getOwnerGrounds,
-  });
-  const ground = grounds?.find((g) => g.id === id);
+  const { data: ground } = useOwnerGround(id ?? "");
 
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
@@ -45,7 +37,7 @@ export default function OwnerGroundSlotsScreen() {
         </View>
       </View>
       {id ? (
-        <GroundSlotManager groundId={id} />
+        <GroundSlotManager groundId={id} role="owner" />
       ) : (
         <View style={{ padding: 24 }}>
           <Text style={{ color: "#5A7264" }}>Ground not found.</Text>

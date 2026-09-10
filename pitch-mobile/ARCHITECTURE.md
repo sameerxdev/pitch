@@ -9,8 +9,7 @@ is structured and *why* each piece is where it is.
 ## 1. Goals
 
 - A single Expo app that serves four distinct experiences — **player**, **manager**, **ground owner**, **admin** — without duplicating navigation, theming, or networking code.
-- Demo-mode out of the box (seed data + role picker) so design/UX iterations don't need a live backend.
-- Easy to flip to live APIs once the backend is reachable (one env var + swap a few demo hooks).
+- Every screen reads and writes through the live backend. The app previously carried a `src/data/*Demo` seed layer for design iteration; it has been removed, so there is exactly one source of truth per screen.
 
 Non-goals:
 
@@ -52,10 +51,12 @@ app/                       Expo Router file system (routes only).
   (player)/                Player tabs: explore, bookings, profile, etc.
   (manager)/               Manager screens: ground select, QR scanner, bookings.
   (owner)/                 Owner screens: grounds, slots, managers, analytics.
-  (admin)/                 Admin placeholder (phase 2).
+  (admin)/                 Admin tabs: overview, verification queue, users, moderation.
 src/
-  api/                     Axios client + per-area API modules (auth, grounds, bookings…).
+  api/                     Axios client + per-area API modules (auth, grounds, bookings,
+                           manager, owner, admin…).
   components/              Reusable UI building blocks, grouped by domain.
+    admin/                 Admin stat tiles.
     booking/               Booking cards, QR sheet, status chips.
     ground/                Ground card, image carousel, facilities row.
     manager/               Manager-specific panels.
@@ -63,10 +64,10 @@ src/
     slot/                  Slot grid, hourly picker, status pills.
     ui/                    Cross-cutting primitives (buttons, inputs, modals).
   constants/               `config.ts`, route names, Pakistan cities, etc.
-  data/                    Demo/seed data used when API is offline.
-  hooks/                   React Query hooks (slotDemo, ownerDemo, managerDemo …).
-  stores/                  Zustand stores (auth/session, UI flags).
-  utils/                   Date/number helpers, advance calculator, formatters.
+  hooks/                   React Query hooks, one module per API area.
+  stores/                  Zustand stores (auth/session, active manager ground).
+  utils/                   Date/number helpers, advance calculator, formatters,
+                           slot-template validation, push-notification routing.
 ```
 
 Two patterns to internalize before touching code:
@@ -95,7 +96,7 @@ Deep linking works thanks to Expo Router — `expo-linking://bookings/abc123` op
 - The axios client (`src/api/client.ts`) installs two interceptors:
   - **Request:** attach `Authorization: Bearer <access>`.
   - **Response:** on 401, attempt one `POST /auth/refresh` using the stored refresh token. Success → replay the original request. Failure → wipe tokens and route to `(auth)/index`.
-- The demo build (`config.DEMO_MODE = true`) skips the network and seeds a user from `src/data/` so designers can iterate without a backend.
+- The server decides the role; the app never asks. `app/_layout.tsx` routes on `user.role` after verification. An admin suspending an account causes every subsequent call to 403 and the next login to fail outright.
 
 If the user's `full_name` is null after verify, `(auth)/profile-setup.tsx` collects name + city and calls `PATCH /users/me` before letting them into the app.
 
@@ -108,7 +109,8 @@ A few conventions worth knowing:
 - Query keys mirror REST paths: `["grounds", { city, search }]`, `["grounds", id, "slots", { date }]`, `["bookings", { status }]`.
 - **Mutations always `invalidateQueries` for their domain** — `createBooking` invalidates `["bookings"]` and the affected slot list so the slot grid recolors immediately.
 - **Polling lives in hooks, not screens.** Payment polling (every 3 s, 5 min cap), slot refresh (30 s), booking status — all wrapped in dedicated hooks that the screen just consumes.
-- **Demo hooks** (`useSlotsDemo`, `useOwnerAnalyticsDemo`, etc.) return the same shape as the live hooks, so swapping is mechanical — change one import.
+- **One hook module per API area** — `useGrounds`, `useBookings`, `useManagerBookings`, `useManagerMutations`, `useOwner`, `useAdmin`. Screens import hooks, never the axios module directly. The one exception is `app/(owner)/(tabs)/ground/new.tsx`, which calls `assignManager` directly because the ground id doesn't exist until creation returns.
+- **Shared screens take a role prop rather than duplicating.** `GroundSlotManager` is used by both managers and owners, whose slot endpoints differ (`/manager/...` vs `/owner/...`). `useGroundSlotAdmin` mounts both hook sets and disables the inactive one by passing an empty ground id — hooks can't be called conditionally.
 
 Cache strategy: `staleTime` defaults to 30 seconds, `gcTime` to 5 minutes. Long-lived data (ground listings) bumps `staleTime` up; payment status sets it to 0.
 
@@ -174,16 +176,12 @@ grounds list ──► ground edit (photos, rates, facilities)
 `src/constants/config.ts` centralizes everything tunable:
 
 - `EXPO_PUBLIC_API_BASE_URL` — base URL for the backend (`{API_HOST}/api/v1`).
-- `DEMO_MODE` — when true, all hooks return seed data.
 - `PERSIST_AUTH_SESSION` — disable for dev wipe-on-restart, enable for production.
 - Polling intervals (`PAYMENT_POLL_INTERVAL_MS`, `SLOT_POLL_INTERVAL_MS`) so timing changes live in one place.
-- Business constants mirrored from the spec (`MAX_GROUND_PHOTOS`, `MAX_REVIEW_PHOTOS`, `QR_SCAN_WINDOW_MINUTES`, `PLAYER_MAX_BOOKING_DAYS_AHEAD`).
+- Business constants mirrored from the spec (`MAX_GROUND_PHOTOS`, `MAX_REVIEW_PHOTOS`, `QR_SCAN_WINDOW_MINUTES`, `PLAYER_MAX_BOOKING_DAYS_AHEAD`). These are display/validation hints only — the backend enforces its own copy.
 
-When switching from demo to live, you typically touch only:
-
-1. `EXPO_PUBLIC_API_BASE_URL` (in `.env`).
-2. `DEMO_MODE = false`.
-3. `PERSIST_AUTH_SESSION = true`.
+For a production build, set `EXPO_PUBLIC_API_BASE_URL` in `.env` and flip
+`PERSIST_AUTH_SESSION` to `true`. Nothing else is environment-dependent.
 
 ---
 
@@ -216,8 +214,8 @@ Permissions are requested lazily, just before the feature is used, with a soft p
 | A new screen | A new file under `app/(role)/`. Use existing `_layout.tsx` for tab/stack registration. |
 | A new API call | `src/api/<area>.ts` (axios + types) + `src/hooks/use<X>.ts` (React Query wrapper). Use the hook in the screen. |
 | A new shared component | `src/components/<domain>/` if it's domain-specific; `src/components/ui/` if cross-cutting. |
-| Demo data for a screen | Add to `src/data/`, mirror it in a `*Demo` hook in `src/hooks/`. |
-| A push notification handler | Wire it up in `app/_layout.tsx` where `expo-notifications` is initialized. |
+| A push notification destination | Add the `type` → route case in `src/utils/notificationRoutes.ts`. The listener itself lives in `src/hooks/useNotifications.ts`. |
+| An admin capability | `src/api/admin.ts` + `src/hooks/useAdmin.ts`, then a tab under `app/(admin)/(tabs)/`. |
 
 ---
 

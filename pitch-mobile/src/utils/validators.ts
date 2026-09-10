@@ -19,6 +19,21 @@ export function stripPhonePrefix(e164Phone: string): string {
   return e164Phone.replace(/^\+92/, "");
 }
 
+/**
+ * Normalize whatever the user typed into the `+923XXXXXXXXX` form the API
+ * requires — tolerating spaces, a leading 0, or an already-prefixed number.
+ * Returns null when the result still isn't a valid PK mobile number.
+ */
+export function toE164Pk(input: string): string | null {
+  const digitsOnly = input.replace(/[\s-()]/g, "");
+  const local = digitsOnly
+    .replace(/^\+92/, "")
+    .replace(/^0092/, "")
+    .replace(/^92(?=3)/, "")
+    .replace(/^0(?=3)/, "");
+  return isValidPakistanPhone(local) ? formatPhoneE164(local) : null;
+}
+
 // Zod schemas
 export const phoneSchema = z
   .string()

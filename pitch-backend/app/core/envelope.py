@@ -46,6 +46,15 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     return JSONResponse(body, status_code=exc.status_code)
 
 
+async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    """Domain-level ValueErrors (e.g. a malformed ObjectId) are client errors, not 500s."""
+    body = {
+        "data": None,
+        "error": {"code": "VALIDATION_ERROR", "message": str(exc) or "Invalid request.", "details": None},
+    }
+    return JSONResponse(body, status_code=400)
+
+
 async def validation_exception_handler(request: Request, exc) -> JSONResponse:
     details: dict[str, list[str]] = {}
     try:

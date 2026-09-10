@@ -127,6 +127,10 @@ async def _seed_users(db) -> dict[str, dict]:
     return {u["phone"]: u for u in docs}
 
 
+def _geo(longitude: float, latitude: float) -> dict:
+    return {"type": "Point", "coordinates": [longitude, latitude]}
+
+
 async def _seed_grounds(db, owner_id: ObjectId) -> list[dict]:
     now = _now()
     grounds = [
@@ -139,6 +143,7 @@ async def _seed_grounds(db, owner_id: ObjectId) -> list[dict]:
             "address": "DHA Phase 5, Sector C, Lahore",
             "latitude": 31.4697,
             "longitude": 74.4128,
+            "location": _geo(74.4128, 31.4697),
             "hourly_rate_day": 2000.0,
             "hourly_rate_night": 3000.0,
             "advance_percent": 25,
@@ -162,6 +167,7 @@ async def _seed_grounds(db, owner_id: ObjectId) -> list[dict]:
             "address": "Clifton Block 2, Karachi",
             "latitude": 24.8245,
             "longitude": 67.0301,
+            "location": _geo(67.0301, 24.8245),
             "hourly_rate_day": 2500.0,
             "hourly_rate_night": 3500.0,
             "advance_percent": 20,
@@ -170,6 +176,30 @@ async def _seed_grounds(db, owner_id: ObjectId) -> list[dict]:
                 "https://images.unsplash.com/photo-1593766788306-28561086694e?w=1200",
             ],
             "status": "active",
+            "avg_rating": 0.0,
+            "review_count": 0,
+            "created_at": now,
+            "updated_at": now,
+        },
+        {
+            # Left unverified on purpose so the admin app has a ground to review.
+            "_id": ObjectId(),
+            "owner_id": owner_id,
+            "name": "Model Town Turf Club",
+            "city": "Lahore",
+            "area": "Model Town Block B",
+            "address": "Model Town Block B, Lahore",
+            "latitude": 31.4805,
+            "longitude": 74.3239,
+            "location": _geo(74.3239, 31.4805),
+            "hourly_rate_day": 1800.0,
+            "hourly_rate_night": 2600.0,
+            "advance_percent": 30,
+            "facilities": ["Washrooms", "Parking"],
+            "photos": [
+                "https://images.unsplash.com/photo-1607734834519-d8576ae60ea6?w=1200",
+            ],
+            "status": "pending_verification",
             "avg_rating": 0.0,
             "review_count": 0,
             "created_at": now,
@@ -385,6 +415,7 @@ async def main() -> None:
         logger.info("Manager #1  : +923000000003  → %s", grounds[0]["name"])
         logger.info("Manager #2  : +923000000004  → %s", grounds[1]["name"])
         logger.info("Players     : +923000000005, +923000000006, +923000000007")
+        logger.info("Awaiting admin verification: %s", grounds[2]["name"])
     finally:
         await close_mongo()
 

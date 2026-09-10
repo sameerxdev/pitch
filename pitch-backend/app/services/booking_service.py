@@ -11,6 +11,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.config import settings
 from app.core.exceptions import business_rule, forbidden, not_found, validation_error
 from app.core.security import create_qr_token, decode_qr_token, utcnow
+from app.services import notification_service
 from app.services.serializers import booking_to_out
 from app.utils.ids import to_oid
 
@@ -156,6 +157,9 @@ async def cancel_booking(db: AsyncIOMotorDatabase, player: dict, booking_id: str
         {"$set": {"status": "refunded", "refunded_at": now}},
     )
     booking = await db.bookings.find_one({"_id": booking["_id"]})
+    notification_service.notify_in_background(
+        notification_service.notify_booking_cancelled(db, booking, "Cancelled by player.")
+    )
     return booking_to_out(booking)
 
 
@@ -256,6 +260,9 @@ async def complete_booking(
         },
     )
     booking = await db.bookings.find_one({"_id": booking["_id"]})
+    notification_service.notify_in_background(
+        notification_service.notify_booking_completed(db, booking)
+    )
     return booking_to_out(booking)
 
 

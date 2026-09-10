@@ -7,6 +7,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.exceptions import business_rule, conflict, forbidden, not_found
 from app.core.security import utcnow
+from app.services import notification_service
 from app.services.serializers import review_to_out
 from app.utils.ids import to_oid
 
@@ -94,6 +95,10 @@ async def reply_to_review(db: AsyncIOMotorDatabase, user: dict, review_id: str, 
         {"$set": {"manager_reply": reply_text, "manager_reply_at": now, "updated_at": now}},
     )
     review = await db.reviews.find_one({"_id": review["_id"]})
+    ground = await db.grounds.find_one({"_id": review["ground_id"]}, {"name": 1})
+    notification_service.notify_in_background(
+        notification_service.notify_review_reply(db, review, (ground or {}).get("name", "The ground"))
+    )
     return review_to_out(review)
 
 

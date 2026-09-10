@@ -59,6 +59,11 @@ export interface Ground {
   created_at: string;
 }
 
+/** Ground detail responses embed a preview of the newest reviews. */
+export interface GroundDetail extends Ground {
+  latest_reviews: Review[];
+}
+
 export interface Slot {
   id: string;
   ground_id: string;
@@ -146,10 +151,13 @@ export interface ManagerAssignment {
   ground_name: string;
   ground_area: string;
   ground_city: string;
-  manager_id: string;
-  manager_name: string;
+  /** Null while the invited phone has not signed up yet. */
+  manager_id: string | null;
+  manager_name: string | null;
   manager_phone: string;
   is_active: boolean;
+  /** True when the invite is still waiting on the phone's first login. */
+  is_pending_signup: boolean;
   assigned_at: string;
 }
 
@@ -176,6 +184,59 @@ export interface OwnerAnalytics {
     ground_id: string;
     ground_name: string;
     metrics: AnalyticsPeriod;
+  }>;
+}
+
+// ─── Admin ───────────────────────────────────────────────────────────────────
+
+/** Ground row in the admin console — the base ground plus operator context. */
+export interface AdminGround extends Ground {
+  owner_name: string | null;
+  owner_phone: string | null;
+  manager_count: number;
+  booking_count: number;
+}
+
+export interface AdminUser extends User {
+  is_suspended: boolean;
+  deleted_at: string | null;
+  /** Present for ground_owner rows. */
+  ground_count?: number;
+  /** Present for player rows. */
+  booking_count?: number;
+}
+
+export interface AdminReview extends Review {
+  ground_name: string;
+}
+
+export interface PlatformTotals {
+  players: number;
+  managers: number;
+  owners: number;
+  grounds_active: number;
+  grounds_pending: number;
+  grounds_suspended: number;
+  bookings_total: number;
+  reviews_total: number;
+  reviews_hidden: number;
+}
+
+export interface PlatformAnalytics {
+  period: string;
+  totals: PlatformTotals;
+  period_metrics: {
+    bookings: number;
+    gross_value: number;
+    collected: number;
+  };
+  booking_status_breakdown: Record<string, number>;
+  daily_volume: DailyBookingVolume[];
+  top_grounds: Array<{
+    ground_id: string;
+    ground_name: string;
+    bookings: number;
+    revenue: number;
   }>;
 }
 

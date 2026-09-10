@@ -51,8 +51,9 @@ class ManagerAssignmentOut(BaseModel):
     ground_name: str
     ground_area: str
     ground_city: str
-    manager_id: str
+    manager_id: Optional[str] = None
     manager_name: Optional[str] = None
     manager_phone: str
     is_active: bool
+    is_pending_signup: bool = False
     assigned_at: str

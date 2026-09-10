@@ -134,15 +134,19 @@ def payment_to_out(doc: dict) -> dict:
 
 
 def assignment_to_out(assignment: dict, ground: dict, manager: Optional[dict]) -> dict:
+    # manager_id stays None until an invited phone signs up, so fall back to the
+    # phone captured on the invite and flag the row as pending for the UI.
+    manager_id = assignment.get("manager_id")
     return {
         "id": str(assignment["_id"]),
         "ground_id": str(ground["_id"]),
         "ground_name": ground.get("name", ""),
         "ground_area": ground.get("area", ""),
         "ground_city": ground.get("city", ""),
-        "manager_id": str(assignment["manager_id"]),
-        "manager_name": (manager or {}).get("full_name") if manager else None,
-        "manager_phone": (manager or {}).get("phone", ""),
+        "manager_id": str(manager_id) if manager_id else None,
+        "manager_name": (manager or {}).get("full_name") or None,
+        "manager_phone": (manager or {}).get("phone") or assignment.get("manager_phone", ""),
         "is_active": assignment.get("is_active", True),
+        "is_pending_signup": manager_id is None,
         "assigned_at": iso(assignment.get("assigned_at")),
     }

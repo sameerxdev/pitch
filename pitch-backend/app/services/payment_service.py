@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.config import settings
 from app.core.exceptions import business_rule, forbidden, not_found
 from app.core.security import utcnow
+from app.services import notification_service
 from app.services.booking_service import issue_qr_token
 from app.services.serializers import payment_to_out
 from app.utils.ids import to_oid
@@ -99,6 +100,9 @@ async def mark_payment_completed(
         await db.slots.update_one(
             {"_id": booking["slot_id"]},
             {"$set": {"status": "booked", "hold_expires_at": None, "updated_at": now}},
+        )
+        notification_service.notify_in_background(
+            notification_service.notify_booking_confirmed(db, booking)
         )
 
     payment = await db.payments.find_one({"_id": payment["_id"]})

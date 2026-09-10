@@ -19,21 +19,22 @@ import {
 import { SlotLegend } from "@/components/slot/SlotCell";
 import { formatPKR, formatHour12, formatSlotRange } from "@/utils/format";
 import { getApiErrorMessage } from "@/api/client";
-import { useApplyManagerSlots } from "@/hooks/useManagerMutations";
-import { useGround } from "@/hooks/useGrounds";
 import {
-  useManagerSlots,
-  useUpdateManagerSlot,
-} from "@/hooks/useManagerBookings";
+  useGroundSlotAdmin,
+  type SlotAdminRole,
+} from "@/hooks/useGroundSlotAdmin";
 import {
+  inferRateType,
   slotPriceFromTemplate,
   validateManualSlotTemplate,
   type ManualSlotTemplate,
-} from "@/data/slotDemo";
+} from "@/utils/slotTemplates";
 import type { RateType, Slot, SlotStatus } from "@/api/types";
 
 type Props = {
   groundId: string;
+  /** Which set of endpoints to talk to. Managers and owners have separate routes. */
+  role?: SlotAdminRole;
 };
 
 const EMPTY_DRAFT: ManualSlotTemplate = {
@@ -41,15 +42,6 @@ const EMPTY_DRAFT: ManualSlotTemplate = {
   end_hour: 20,
   rate_type: "night",
 };
-
-/**
- * Day vs Night is auto-suggested from the start hour.
- * Night window: 6 PM – 6 AM (start_hour in [18, 24) or [0, 6)).
- * Anything else is treated as a day slot.
- */
-function inferRateType(startHour: number): RateType {
-  return startHour >= 18 || startHour < 6 ? "night" : "day";
-}
 
 function RateTypeToggle({
   value,
@@ -149,10 +141,7 @@ function HourPicker({
   );
 }
 
-export function GroundSlotManager({ groundId }: Props) {
-  const { data: ground } = useGround(groundId);
-  const updateSlotMutation = useUpdateManagerSlot(groundId);
-  const applySlotsMutation = useApplyManagerSlots(groundId);
+export function GroundSlotManager({ groundId, role = "manager" }: Props) {
   const today = startOfDay(new Date());
 
   const [dateMode, setDateMode] = useState<DateSelectionMode>("single");
@@ -161,6 +150,15 @@ export function GroundSlotManager({ groundId }: Props) {
     to: today,
   });
   const [previewDate, setPreviewDate] = useState(today);
+  const previewDateStr = format(previewDate, "yyyy-MM-dd");
+
+  const {
+    ground,
+    isGroundLoading,
+    slots: previewSlots,
+    updateSlot: updateSlotMutation,
+    applySlots: applySlotsMutation,
+  } = useGroundSlotAdmin(groundId, role, previewDateStr);
 
   const [hourlyDay, setHourlyDay] = useState(2000);
   const [hourlyNight, setHourlyNight] = useState(3000);
@@ -177,9 +175,6 @@ export function GroundSlotManager({ groundId }: Props) {
     setHourlyDay(ground.hourly_rate_day);
     setHourlyNight(ground.hourly_rate_night);
   }, [ground?.hourly_rate_day, ground?.hourly_rate_night]);
-
-  const previewDateStr = format(previewDate, "yyyy-MM-dd");
-  const { data: previewSlots = [] } = useManagerSlots(groundId, previewDateStr);
 
   const draftPreviewPrice = slotPriceFromTemplate(
     {
@@ -287,6 +282,14 @@ export function GroundSlotManager({ groundId }: Props) {
       date: previewDateStr,
       updates: { status: next },
     });
+  }
+
+  if (isGroundLoading) {
+    return (
+      <View style={{ padding: 24, alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#1A5C38" />
+      </View>
+    );
   }
 
   if (!ground) {

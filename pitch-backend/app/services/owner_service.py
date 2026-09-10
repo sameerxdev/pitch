@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.exceptions import conflict, not_found
 from app.core.security import utcnow
+from app.services import notification_service
 from app.services.serializers import assignment_to_out
 from app.utils.ids import to_oid
 
@@ -204,19 +205,40 @@ async def assign_manager(db: AsyncIOMotorDatabase, ground_id: str, phone: str) -
     doc["_id"] = result.inserted_id
     if manager_user and manager_user.get("role") == "player":
         await db.users.update_one({"_id": manager_user["_id"]}, {"$set": {"role": "manager"}})
+        manager_user["role"] = "manager"
+    if manager_id:
+        notification_service.notify_in_background(
+            notification_service.notify_manager_assigned(db, manager_id, ground.get("name", "a ground"))
+        )
     return assignment_to_out(doc, ground, manager_user)
 
 
 async def remove_manager(db: AsyncIOMotorDatabase, ground_id: str, manager_id: str) -> None:
+    """Deactivate an assignment.
+
+    `manager_id` accepts either a user id or the assignment's own id — invites
+    sent to a phone that hasn't signed up yet have no user id to reference.
+    """
     gid = to_oid(ground_id)
-    mid = to_oid(manager_id)
+    oid = to_oid(manager_id)
     result = await db.manager_assignments.update_many(
-        {"ground_id": gid, "manager_id": mid, "is_active": True},
+        {"ground_id": gid, "manager_id": oid, "is_active": True},
         {"$set": {"is_active": False, "removed_at": utcnow()}},
     )
     if result.modified_count == 0:
-        raise not_found("Manager assignment not found.")
-    # If manager has no other active assignments, demote back to player.
-    other = await db.manager_assignments.find_one({"manager_id": mid, "is_active": True})
+        # Fall back to treating the id as the assignment's own _id.
+        result = await db.manager_assignments.update_one(
+            {"_id": oid, "ground_id": gid, "is_active": True},
+            {"$set": {"is_active": False, "removed_at": utcnow()}},
+        )
+        if result.modified_count == 0:
+            raise not_found("Manager assignment not found.")
+        assignment = await db.manager_assignments.find_one({"_id": oid})
+        oid = assignment.get("manager_id") if assignment else None
+        if oid is None:
+            return  # Pending invite — no user account to demote.
+
+    # If the manager has no other active assignments, demote back to player.
+    other = await db.manager_assignments.find_one({"manager_id": oid, "is_active": True})
     if not other:
-        await db.users.update_one({"_id": mid, "role": "manager"}, {"$set": {"role": "player"}})
+        await db.users.update_one({"_id": oid, "role": "manager"}, {"$set": {"role": "player"}})

@@ -17,7 +17,7 @@ This document is derived from the **pitch-mobile** React Native application (`sr
 5. [Player — reviews](#5-player--reviews)
 6. [Manager APIs](#6-manager-apis)
 7. [Ground owner APIs](#7-ground-owner-apis)
-8. [Admin (phase 2)](#8-admin-phase-2)
+8. [Admin](#8-admin)
 9. [Push notifications](#9-push-notifications)
 10. [Cross-cutting business rules](#10-cross-cutting-business-rules)
 11. [Suggested data model](#11-suggested-data-model)
@@ -136,9 +136,17 @@ Non-file fields in multipart: send as form fields (strings). Arrays like `facili
 
 **Rules:**
 
-- Rate-limit per phone/IP.
 - OTP length: **6 digits**.
 - Max verify attempts: **3** (`OTP_MAX_ATTEMPTS`) before lockout/cooldown.
+- Rate-limited per phone number:
+
+| Code | Status | Condition |
+|------|--------|-----------|
+| `OTP_COOLDOWN` | 422 | Another code was requested < `OTP_RESEND_COOLDOWN_SECONDS` ago (default 30s) |
+| `OTP_RATE_LIMITED` | 422 | More than `OTP_MAX_REQUESTS_PER_HOUR` codes in the last hour (default 5) |
+
+Both carry `details.retry_after_seconds`. Throttling is skipped while
+`AUTH_BYPASS_OTP=true`, since no SMS is sent in that mode.
 
 ---
 
@@ -293,6 +301,11 @@ Soft-delete or hard-delete per policy; cancel future bookings.
 
 - Only return grounds with `status = active` for players.
 - Include `photos[0]` as listing thumbnail.
+- When **both** `lat` and `lng` are supplied, results are sorted nearest-first and
+  each item gains a `distance_km` field (2 decimals). Without them, results are
+  sorted newest-first and `distance_km` is absent. Distance sorting uses a
+  `2dsphere` index on a GeoJSON `location` field derived from each ground's
+  latitude/longitude.
 
 ---
 
@@ -915,13 +928,32 @@ Same shape as §3.3; managers see all dates (including past for operations).
 
 ---
 
-### 7.4 Apply manual slots (owner)
+### 7.3b Ground detail (owner)
 
-`POST /owner/grounds/{groundId}/slots/apply`
+`GET /owner/grounds/{groundId}`
 
 **Auth:** Bearer (ground_owner)
 
-Same request/response as §6.4.
+Same shape as §3.2, but scoped to the caller's own grounds — and unlike the public
+route it also returns grounds that are `pending_verification`, `inactive`, or
+`suspended`. The owner app uses this everywhere it needs a single ground.
+
+---
+
+### 7.4 Slots (owner)
+
+Owners manage slots on their own grounds through the same operations managers use,
+under the `/owner` prefix:
+
+| Method | Path | Equivalent |
+|--------|------|------------|
+| GET | `/owner/grounds/{groundId}/slots?date=&from=&to=` | §6.2 |
+| PATCH | `/owner/grounds/{groundId}/slots/{slotId}` | §6.3 |
+| POST | `/owner/grounds/{groundId}/slots/apply` | §6.4 |
+
+**Auth:** Bearer (ground_owner). Authorization is by ground ownership rather than
+manager assignment; everything else — request bodies, validation, error codes — is
+identical.
 
 ---
 
@@ -941,12 +973,20 @@ Same request/response as §6.4.
 
 **Behavior:**
 
-- Find or invite user with role `manager`.
-- Create assignment row.
+- If a user with that phone exists, they're assigned and promoted to `manager`.
+- If not, the row is stored against the phone alone (`manager_id: null`,
+  `is_pending_signup: true`) and resolves to a real user on their first OTP login.
+  Several such invites can coexist on one ground.
+- Re-assigning an already-active phone returns `409 MANAGER_ALREADY_ASSIGNED`.
 
 `DELETE /owner/grounds/{groundId}/managers/{managerId}`
 
-Remove assignment (`manager_id` in path).
+Deactivates the assignment. The path segment accepts **either** the manager's user id
+**or** the assignment's own `id` — a pending invite has no user id to reference. When
+the removed manager has no other active assignments, their role drops back to `player`.
+
+**Note:** the list endpoint returns inactive assignments too (they stay auditable);
+filter on `is_active` for display.
 
 ### ManagerAssignment
 
@@ -957,10 +997,11 @@ Remove assignment (`manager_id` in path).
   ground_name: string;
   ground_area: string;
   ground_city: string;
-  manager_id: string;
-  manager_name: string;
+  manager_id: string | null;      // null until the invited phone signs up
+  manager_name: string | null;
   manager_phone: string;
   is_active: boolean;
+  is_pending_signup: boolean;     // true while manager_id is null
   assigned_at: string;
 }
 ```
@@ -1043,33 +1084,115 @@ Remove assignment (`manager_id` in path).
 
 ---
 
-## 8. Admin (phase 2)
+## 8. Admin
 
-Mobile shows placeholder only. Planned web dashboard:
+All routes require `role: admin`. Anything else gets `403 FORBIDDEN`.
 
-| Capability | Suggested endpoints |
-|------------|---------------------|
-| Verify grounds | `PATCH /admin/grounds/{id}/verify` |
-| Suspend ground/user | `PATCH /admin/grounds/{id}`, `PATCH /admin/users/{id}` |
-| Platform analytics | `GET /admin/analytics` |
-| Moderate reviews | `PATCH /admin/reviews/{id}` (`is_visible`) |
+### 8.1 Platform analytics
+
+`GET /admin/analytics?period=today|week|month`
+
+**Response `data`:**
+
+```json
+{
+  "period": "week",
+  "totals": {
+    "players": 128, "managers": 9, "owners": 6,
+    "grounds_active": 14, "grounds_pending": 2, "grounds_suspended": 1,
+    "bookings_total": 902, "reviews_total": 210, "reviews_hidden": 3
+  },
+  "period_metrics": { "bookings": 61, "gross_value": 244000, "collected": 180500 },
+  "booking_status_breakdown": { "confirmed": 22, "completed": 31, "cancelled": 5, "no_show": 3 },
+  "daily_volume": [{ "date": "2026-05-14", "count": 9 }],
+  "top_grounds": [
+    { "ground_id": "...", "ground_name": "Champions Cricket Ground", "bookings": 24, "revenue": 96000 }
+  ]
+}
+```
+
+### 8.2 List grounds
+
+`GET /admin/grounds?status=&search=&limit=20&offset=0`
+
+`status` accepts a comma-separated list of `pending_verification | active | inactive | suspended`;
+an unknown value returns `400 VALIDATION_ERROR`. Results are ordered so the
+pending-verification queue comes first.
+
+Each item is a `Ground` plus `owner_name`, `owner_phone`, `manager_count`, `booking_count`.
+
+### 8.3 Verify a ground
+
+`PATCH /admin/grounds/{ground_id}/verify`
+
+**Body:** `{ "approve": true }` or `{ "approve": false, "reason": "Photos are unclear" }`
+
+`reason` is **required** when rejecting (`400` otherwise). Approving sets `status: "active"`
+and stamps `verified_at`; rejecting sets `status: "inactive"` and stores `rejection_reason`.
+The owner receives a push notification either way.
+
+### 8.4 Set ground status
+
+`PATCH /admin/grounds/{ground_id}`
+
+**Body:** `{ "status": "suspended", "reason": "Under audit" }`
+
+Used for suspend/restore outside the verification flow.
+
+### 8.5 List users
+
+`GET /admin/users?role=&search=&limit=20&offset=0`
+
+`role` accepts a comma-separated list of `player | manager | ground_owner | admin`.
+`search` matches name or phone. Each item is a `User` plus `is_suspended`, `deleted_at`,
+and either `ground_count` (owners) or `booking_count` (players).
+
+### 8.6 Update a user
+
+`PATCH /admin/users/{user_id}`
+
+**Body:** `{ "role": "ground_owner" }` and/or `{ "is_suspended": true }` (at least one).
+
+- Suspending deletes the user's refresh tokens; every subsequent API call returns
+  `403 FORBIDDEN` and `/auth/verify-otp` refuses the login.
+- Demoting a `manager` deactivates their ground assignments — otherwise they'd keep
+  ground access without the role.
+- Admins cannot change their own role or status (`422 CANNOT_MODIFY_SELF`).
+
+This is also how the first `ground_owner` is created; there is no owner self-signup.
+
+### 8.7 Review moderation
+
+`GET /admin/reviews?ground_id=&visible=&limit=20&offset=0` — items are `Review` plus `ground_name`.
+
+`PATCH /admin/reviews/{review_id}` with `{ "is_visible": false }` hides a review.
+Hiding or restoring recalculates the ground's `avg_rating` / `review_count`, since
+hidden reviews are excluded from both.
 
 ---
 
 ## 9. Push notifications
 
-Mobile registers FCM token via `PATCH /users/me` (`fcm_token`).
+The mobile app registers an **Expo push token** via `PATCH /users/me` (`fcm_token`),
+so the server sends through Expo's push service, which fans out to FCM/APNs.
+Sends are best-effort and never block the request that triggered them; set
+`PUSH_ENABLED=false` to disable.
 
-**Suggested notification events:**
+Each payload carries a `type` plus the relevant id; the client maps that to a
+destination screen (`src/utils/notificationRoutes.ts`).
 
-| Event | Audience |
-|-------|----------|
-| Booking confirmed | Player |
-| Booking reminder (1h before) | Player |
-| New booking | Manager |
-| Ground approved | Owner |
-| Review received | Owner / Manager |
-| Payment failed | Player |
+| Event | `type` | Audience |
+|-------|--------|----------|
+| Payment cleared, booking confirmed | `booking_confirmed` | Player |
+| New booking on your ground | `booking_created` | Owner + assigned managers |
+| Booking cancelled | `booking_cancelled` | Player, owner + managers |
+| Booking completed (prompts a review) | `booking_completed` | Player |
+| Assigned as ground manager | `manager_assigned` | Manager |
+| Ground approved / rejected / suspended | `ground_status` | Owner |
+| Ground replied to your review | `review_reply` | Player |
+
+Not yet implemented: booking reminders ahead of a slot, and payment-failure notices
+(the gateway integration is still stubbed).
 
 ---
 
@@ -1084,7 +1207,14 @@ blocked → available (manager/owner)
 on_hold → available (hold expired / booking cancelled)
 ```
 
-**Hold expiry job:** Every minute, release holds where `hold_expires_at < now` and cancel `on_hold` bookings.
+**Background job (every 60s):**
+
+1. **Hold expiry** — release holds where `hold_expires_at < now` and cancel the
+   matching `on_hold` bookings with `cancellation_reason: "Hold expired"`.
+2. **No-shows** — flip `confirmed` bookings to `no_show` once the slot's end time
+   passed more than 2 hours ago. Without this a booking nobody checked in for stays
+   `confirmed` forever and skews owner analytics. The past slot is left `booked`;
+   releasing it would only make an expired slot look bookable.
 
 ### 10.2 Player booking horizon
 
@@ -1175,28 +1305,47 @@ Core tables (relational):
 | GET | `/manager/grounds/{id}/reviews` | Manager |
 | GET | `/owner/grounds` | Owner |
 | POST | `/owner/grounds` | Owner |
+| GET | `/owner/grounds/{id}` | Owner |
 | PATCH | `/owner/grounds/{id}` | Owner |
+| GET | `/owner/grounds/{id}/slots` | Owner |
+| PATCH | `/owner/grounds/{id}/slots/{slotId}` | Owner |
 | POST | `/owner/grounds/{id}/slots/apply` | Owner |
 | GET | `/owner/grounds/{id}/managers` | Owner |
 | POST | `/owner/grounds/{id}/managers` | Owner |
 | DELETE | `/owner/grounds/{id}/managers/{mid}` | Owner |
 | GET | `/owner/analytics` | Owner |
 | GET | `/owner/grounds/{id}/reviews` | Owner |
+| GET | `/admin/analytics` | Admin |
+| GET | `/admin/grounds` | Admin |
+| PATCH | `/admin/grounds/{id}/verify` | Admin |
+| PATCH | `/admin/grounds/{id}` | Admin |
+| GET | `/admin/users` | Admin |
+| PATCH | `/admin/users/{id}` | Admin |
+| GET | `/admin/reviews` | Admin |
+| PATCH | `/admin/reviews/{id}` | Admin |
 
 ---
 
-## Mobile integration checklist
+## Integration status
 
-When backend is ready:
+Every endpoint above is implemented and consumed by the mobile app — the player,
+manager, owner, and admin experiences all run on live APIs, with no demo/seed
+fallback left in the client.
 
-1. Set `EXPO_PUBLIC_API_BASE_URL` in `.env`.
-2. Set `PERSIST_AUTH_SESSION: true` in config for production.
-3. Replace demo OTP/login with `requestOtp` / `verifyOtp` in `app/(auth)/*`.
-4. Replace `slotDemo` / `ownerDemo` / `managerDemo` hooks with TanStack Query calling API modules in `src/api/`.
-5. Wire `initiatePayment` + payment status polling in `pay.tsx`.
-6. Wire `arriveBooking` / `completeBooking` in manager screens.
-7. Implement `POST .../slots/apply` in owner API module (mirror manager).
+Still outstanding, and deliberately so:
+
+1. **Payment gateway.** `POST /payments/initiate` returns a stub `payment_url`, and the
+   JazzCash/Easypaisa webhooks accept the documented body without verifying the
+   gateway signature. `PAYMENT_AUTO_COMPLETE=true` settles payments immediately so
+   the client's polling flow works end to end in development — **disable it in
+   production** and wire the real gateway plus signature checks.
+2. **SMS provider.** `request_otp` generates and stores a real OTP but nothing sends
+   it. `OTP_DEBUG=true` returns it in the response and `AUTH_BYPASS_OTP=true` skips
+   verification entirely. Wire a provider inside `auth_service.request_otp`, then set
+   both flags to `false`.
+3. **Booking reminders.** The push infrastructure is in place but there's no
+   scheduled "your slot starts in 1 hour" job yet.
 
 ---
 
-*Generated from pitch-mobile source. Extend this document when new screens or API modules are added.*
+*Extend this document when new screens or API modules are added.*

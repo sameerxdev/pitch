@@ -19,6 +19,7 @@ from app.core.envelope import (
     http_exception_handler,
     success,
     validation_exception_handler,
+    value_error_handler,
 )
 from app.core.exceptions import AppError
 from app.services.jobs import hold_expiry_loop
@@ -65,6 +66,9 @@ app.add_middleware(
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+# A malformed id reaches to_oid() as a plain ValueError; without this it would
+# surface as an opaque 500 instead of a 400 the client can act on.
+app.add_exception_handler(ValueError, value_error_handler)
 
 app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 

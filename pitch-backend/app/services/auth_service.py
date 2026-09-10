@@ -8,7 +8,7 @@ import jwt
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.config import settings
-from app.core.exceptions import business_rule, unauthorized, validation_error
+from app.core.exceptions import business_rule, forbidden, unauthorized, validation_error
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -24,10 +24,47 @@ def _gen_otp(length: int) -> str:
     return "".join(str(secrets.randbelow(10)) for _ in range(length))
 
 
+async def _enforce_otp_rate_limit(db: AsyncIOMotorDatabase, phone: str) -> None:
+    """Throttle OTP sends per phone: a short resend cooldown plus an hourly cap.
+
+    Requests are logged in `otp_requests`, which carries a TTL index on
+    `expires_at` so the window trims itself.
+    """
+    now = utcnow()
+    hour_ago = now - timedelta(hours=1)
+
+    last = await db.otp_requests.find_one({"phone": phone}, sort=[("created_at", -1)])
+    if last:
+        last_at = last["created_at"]
+        if last_at.tzinfo is None:
+            last_at = last_at.replace(tzinfo=timezone.utc)
+        elapsed = (now - last_at).total_seconds()
+        if elapsed < settings.OTP_RESEND_COOLDOWN_SECONDS:
+            wait = int(settings.OTP_RESEND_COOLDOWN_SECONDS - elapsed) + 1
+            raise business_rule(
+                "OTP_COOLDOWN",
+                f"Please wait {wait}s before requesting another code.",
+                {"retry_after_seconds": wait},
+            )
+
+    recent = await db.otp_requests.count_documents({"phone": phone, "created_at": {"$gte": hour_ago}})
+    if recent >= settings.OTP_MAX_REQUESTS_PER_HOUR:
+        raise business_rule(
+            "OTP_RATE_LIMITED",
+            "Too many codes requested for this number. Try again in an hour.",
+            {"retry_after_seconds": 3600},
+        )
+
+    await db.otp_requests.insert_one(
+        {"phone": phone, "created_at": now, "expires_at": now + timedelta(hours=1)}
+    )
+
+
 async def request_otp(db: AsyncIOMotorDatabase, phone: str) -> dict:
     if settings.AUTH_BYPASS_OTP:
         # OTP service disabled — verify-otp will accept any code.
         return {"expires_in": settings.OTP_TTL_SECONDS, "debug_otp": "bypass"}
+    await _enforce_otp_rate_limit(db, phone)
     code = _gen_otp(settings.OTP_LENGTH)
     expires_at = utcnow() + timedelta(seconds=settings.OTP_TTL_SECONDS)
     await db.otp_codes.delete_many({"phone": phone})
@@ -90,6 +127,9 @@ async def verify_otp(db: AsyncIOMotorDatabase, phone: str, otp: str) -> dict:
             )
         user = doc
     else:
+        # Fail the login itself rather than handing out tokens that 403 on every call.
+        if user.get("is_suspended"):
+            raise forbidden("This account has been suspended. Contact support.")
         # Re-evaluate manager role for existing players if they have an active assignment
         if user.get("role") == "player":
             assignment = await db.manager_assignments.find_one({"manager_id": user["_id"], "is_active": True})

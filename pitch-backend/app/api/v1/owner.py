@@ -17,7 +17,7 @@ from app.schemas.ground import (
     UpdateGroundBody,
 )
 from app.schemas.owner import AssignManagerBody
-from app.schemas.slot import ApplySlotsBody
+from app.schemas.slot import ApplySlotsBody, UpdateSlotBody
 from app.services import ground_service, owner_service, review_service, slot_service
 from app.utils.files import save_images
 
@@ -99,7 +99,46 @@ async def update_ground(
     )
 
 
+@router.get("/grounds/{ground_id}")
+async def ground_detail(
+    ground_id: str,
+    owner=Depends(require_owner),
+    db: AsyncIOMotorDatabase = Depends(get_db),
+):
+    """Owner-scoped detail — unlike the public route this also serves grounds
+    that are still pending verification, inactive, or suspended."""
+    await ground_service.assert_owner(db, ground_id, owner["_id"])
+    return success(await ground_service.get_ground_detail(db, ground_id, public=False))
+
+
 # ---- Slots ------------------------------------------------------------------
+
+@router.get("/grounds/{ground_id}/slots")
+async def list_slots(
+    ground_id: str,
+    date: Optional[str] = None,
+    from_: Optional[str] = Query(default=None, alias="from"),
+    to: Optional[str] = None,
+    owner=Depends(require_owner),
+    db: AsyncIOMotorDatabase = Depends(get_db),
+):
+    await ground_service.assert_owner(db, ground_id, owner["_id"])
+    return success(
+        await slot_service.list_slots(db, ground_id, date_str=date, from_date=from_, to_date=to)
+    )
+
+
+@router.patch("/grounds/{ground_id}/slots/{slot_id}")
+async def update_slot(
+    ground_id: str,
+    slot_id: str,
+    body: UpdateSlotBody,
+    owner=Depends(require_owner),
+    db: AsyncIOMotorDatabase = Depends(get_db),
+):
+    await ground_service.assert_owner(db, ground_id, owner["_id"])
+    return success(await slot_service.update_slot(db, ground_id, slot_id, body))
+
 
 @router.post("/grounds/{ground_id}/slots/apply")
 async def apply_slots(

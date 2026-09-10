@@ -71,6 +71,10 @@ async def get_current_user(
     user = await db.users.find_one({"_id": oid})
     if not user:
         raise unauthorized("User no longer exists.")
+    if user.get("is_suspended"):
+        raise forbidden("This account has been suspended. Contact support.")
+    if user.get("deleted_at"):
+        raise unauthorized("This account has been deleted.")
     return user
 
 

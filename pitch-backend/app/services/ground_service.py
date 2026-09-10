@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import re
 from typing import List, Optional
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from app.core.database import to_geojson
 from app.core.exceptions import forbidden, not_found
 from app.core.security import utcnow
 from app.services.serializers import ground_to_out, review_to_out
@@ -63,11 +65,33 @@ async def list_grounds_public(
         filt["hourly_rate_day"] = {"$lte": max_price}
     if search:
         filt["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"area": {"$regex": search, "$options": "i"}},
-            {"city": {"$regex": search, "$options": "i"}},
+            {"name": {"$regex": re.escape(search), "$options": "i"}},
+            {"area": {"$regex": re.escape(search), "$options": "i"}},
+            {"city": {"$regex": re.escape(search), "$options": "i"}},
         ]
     total = await db.grounds.count_documents(filt)
+
+    if lat is not None and lng is not None:
+        # $geoNear must be the first pipeline stage and applies `filt` itself.
+        pipeline = [
+            {
+                "$geoNear": {
+                    "near": to_geojson(lng, lat),
+                    "distanceField": "distance_m",
+                    "spherical": True,
+                    "query": filt,
+                }
+            },
+            {"$skip": offset},
+            {"$limit": limit},
+        ]
+        items = []
+        async for g in db.grounds.aggregate(pipeline):
+            out = ground_to_out(g)
+            out["distance_km"] = round(g.get("distance_m", 0) / 1000, 2)
+            items.append(out)
+        return {"items": items, "total": total, "limit": limit, "offset": offset}
+
     cursor = db.grounds.find(filt).sort("created_at", -1).skip(offset).limit(limit)
     items = [ground_to_out(g) async for g in cursor]
     return {"items": items, "total": total, "limit": limit, "offset": offset}
@@ -101,6 +125,7 @@ async def create_ground(db: AsyncIOMotorDatabase, owner_id: ObjectId, body: dict
         "address": body["address"],
         "latitude": body["latitude"],
         "longitude": body["longitude"],
+        "location": to_geojson(body["longitude"], body["latitude"]),
         "hourly_rate_day": body["hourly_rate_day"],
         "hourly_rate_night": body["hourly_rate_night"],
         "advance_percent": body["advance_percent"],
@@ -134,6 +159,12 @@ async def update_ground(
             update["status"] = "active" if update_fields["is_active"] else "inactive"
     if photos:
         update["photos"] = ground.get("photos", []) + photos
+    # Keep the GeoJSON mirror in step whenever either coordinate moves.
+    if "latitude" in update or "longitude" in update:
+        update["location"] = to_geojson(
+            update.get("longitude", ground.get("longitude")),
+            update.get("latitude", ground.get("latitude")),
+        )
     if update:
         update["updated_at"] = utcnow()
         await db.grounds.update_one({"_id": ground["_id"]}, {"$set": update})

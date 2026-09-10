@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     OTP_TTL_SECONDS: int = 300
     OTP_MAX_ATTEMPTS: int = 3
     OTP_DEBUG: bool = True
+    # Throttling for /auth/request-otp — protects the SMS bill once a real
+    # provider is wired. Both are enforced per phone number.
+    OTP_RESEND_COOLDOWN_SECONDS: int = 30
+    OTP_MAX_REQUESTS_PER_HOUR: int = 5
     # When true, /auth/verify-otp accepts any code and creates the user if needed.
     # /auth/request-otp becomes a no-op. DISABLE IN PRODUCTION (set AUTH_BYPASS_OTP=false in .env).
     AUTH_BYPASS_OTP: bool = True
@@ -47,6 +51,13 @@ class Settings(BaseSettings):
 
     UPLOAD_DIR: str = "/data/uploads"
     PUBLIC_MEDIA_BASE_URL: str = "http://localhost:8000/media"
+
+    # Push notifications. The mobile app registers an Expo push token via
+    # PATCH /users/me, so delivery goes through Expo's push service rather
+    # than FCM directly. Set PUSH_ENABLED=false to silence all sends.
+    PUSH_ENABLED: bool = True
+    EXPO_PUSH_URL: str = "https://exp.host/--/api/v2/push/send"
+    PUSH_TIMEOUT_SECONDS: float = 8.0
 
     @property
     def cors_origins_list(self) -> List[str]:

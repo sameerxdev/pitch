@@ -92,13 +92,17 @@ All endpoints are mounted under `${API_V1_PREFIX}` (default `/api/v1`).
 
 ### Promoting a user to `ground_owner`
 
-The mobile app does not provide an owner self-signup endpoint. To bootstrap an
-owner (e.g. for the first deployment), promote an existing user via Mongo:
+There is no owner self-signup. Once an admin exists, promotion is done from the
+admin app's **Users** tab (`PATCH /admin/users/{id}` with `{"role": "ground_owner"}`).
+
+To bootstrap the very first `admin` on a fresh deployment, promote a user via Mongo:
 
 ```bash
 docker compose exec mongo mongosh pitch \
-  --eval 'db.users.updateOne({ phone: "+923001234567" }, { $set: { role: "ground_owner" } })'
+  --eval 'db.users.updateOne({ phone: "+923001234567" }, { $set: { role: "admin" } })'
 ```
+
+The dev seed (`python -m app.seed`) already creates one at `+923000000001`.
 
 Managers are assigned implicitly: when an owner calls
 `POST /owner/grounds/{id}/managers` with a phone, the user is created (if
@@ -119,6 +123,8 @@ A background task (see `app/services/jobs.py`) runs every 60 seconds and:
 
 - Releases slot holds whose `hold_expires_at` is in the past
 - Cancels the matching booking with `cancellation_reason = "Hold expired"`
+- Marks `confirmed` bookings as `no_show` once their slot ended more than 2 hours
+  ago, so unattended bookings don't sit in `confirmed` forever and distort analytics
 
 ---
 
@@ -190,7 +196,11 @@ POST /api/v1/bookings/{booking_id}/complete
 | `OTP_LENGTH` | `6` | |
 | `OTP_TTL_SECONDS` | `300` | |
 | `OTP_MAX_ATTEMPTS` | `3` | Lockout after this many wrong tries |
+| `OTP_RESEND_COOLDOWN_SECONDS` | `30` | Min gap between codes for one phone |
+| `OTP_MAX_REQUESTS_PER_HOUR` | `5` | Hourly cap per phone |
 | `OTP_DEBUG` | `true` | Return generated OTP in response (dev only) |
+| `AUTH_BYPASS_OTP` | `true` | Accept any code; skips throttling. **Disable in production** |
+| `PAYMENT_AUTO_COMPLETE` | `true` | Settle payments without a gateway. **Disable in production** |
 | `HOLD_DURATION_SECONDS` | `600` | 10 min hold window |
 | `PLAYER_MAX_BOOKING_DAYS_AHEAD` | `14` | |
 | `QR_SCAN_WINDOW_MINUTES` | `30` | |
@@ -198,6 +208,9 @@ POST /api/v1/bookings/{booking_id}/complete
 | `MAX_REVIEW_PHOTOS` | `3` | |
 | `UPLOAD_DIR` | `/data/uploads` | Persisted via Docker volume |
 | `PUBLIC_MEDIA_BASE_URL` | `http://localhost:8000/media` | Used in returned photo URLs |
+| `PUSH_ENABLED` | `true` | Send pushes via Expo's push service |
+| `EXPO_PUSH_URL` | `https://exp.host/--/api/v2/push/send` | Expo push endpoint |
+| `PUSH_TIMEOUT_SECONDS` | `8` | Per-request timeout for push sends |
 
 ---
 
@@ -212,7 +225,8 @@ All endpoints match the contract in [`BACKEND_API_SPEC.md`](./BACKEND_API_SPEC.m
 - **Payments**: `POST /payments/initiate`, `GET /payments/{id}`, `POST /payments/webhooks/{provider}`
 - **Reviews**: `POST /reviews`, `POST /reviews/{id}/reply`
 - **Manager**: `GET /manager/grounds`, `GET/PATCH /manager/grounds/{id}/slots[...]`, `POST /manager/grounds/{id}/slots/apply`, `GET /manager/grounds/{id}/bookings[/{bid}]`, `POST /bookings/{id}/arrive`, `POST /bookings/{id}/complete`, `GET /manager/grounds/{id}/reviews`
-- **Owner**: `GET/POST /owner/grounds`, `PATCH /owner/grounds/{id}`, `POST /owner/grounds/{id}/slots/apply`, `GET/POST/DELETE /owner/grounds/{id}/managers[...]`, `GET /owner/analytics`, `GET /owner/grounds/{id}/reviews`
+- **Owner**: `GET/POST /owner/grounds`, `GET/PATCH /owner/grounds/{id}`, `GET/PATCH /owner/grounds/{id}/slots[...]`, `POST /owner/grounds/{id}/slots/apply`, `GET/POST/DELETE /owner/grounds/{id}/managers[...]`, `GET /owner/analytics`, `GET /owner/grounds/{id}/reviews`
+- **Admin**: `GET /admin/analytics`, `GET /admin/grounds`, `PATCH /admin/grounds/{id}[/verify]`, `GET/PATCH /admin/users[/{id}]`, `GET/PATCH /admin/reviews[/{id}]`
 
 Open `/docs` for the full interactive schema.
 
@@ -238,13 +252,12 @@ Indexes are created automatically on startup (see `app/core/database.py`).
 
 ## Notes & limitations
 
-- **Admin endpoints** are intentionally not implemented in this phase. The
-  spec marks them as phase 2.
-- **SMS provider** is not wired. Replace the `request_otp` service with your
-  provider's send call and disable `OTP_DEBUG`.
+- **SMS provider** is not wired. `request_otp` generates and stores a real OTP but
+  nothing sends it. Replace its body with your provider's send call, then set both
+  `OTP_DEBUG=false` and `AUTH_BYPASS_OTP=false`.
 - **Payment gateways** are stubbed. The webhook endpoints accept the documented
-  body shape but do not verify gateway signatures. Wire signature verification
-  before going live.
-- **Distance-based sort** on `/grounds` is documented but not implemented; the
-  list endpoint accepts `lat`/`lng` and ignores them. Add a 2dsphere index if
-  needed.
+  body shape but do not verify gateway signatures. `PAYMENT_AUTO_COMPLETE=true`
+  settles payments immediately so the client's polling flow works in development —
+  disable it and wire signature verification before going live.
+- **Booking reminders** ("your slot starts in 1 hour") are not implemented; the
+  push plumbing exists but there's no scheduler for time-based sends.

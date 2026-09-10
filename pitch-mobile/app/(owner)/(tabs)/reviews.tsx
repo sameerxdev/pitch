@@ -6,27 +6,22 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FlashList } from "@shopify/flash-list";
-import { useQuery } from "@tanstack/react-query";
-import { getOwnerGrounds } from "@/data/ownerDemo";
-import { useOwnerReviews } from "@/hooks/useOwnerReviews";
-import { useOwnerDemoStore } from "@/stores/ownerDemoStore";
-import { useManagerDemoStore } from "@/stores/managerDemoStore";
+import {
+  useOwnerGrounds,
+  useOwnerReviews,
+  useReplyToOwnerReview,
+} from "@/hooks/useOwner";
+import { getApiErrorMessage } from "@/api/client";
 import { ReviewCard } from "@/components/ground/ReviewCard";
 import type { Review } from "@/api/types";
 
 export default function OwnerReviewsScreen() {
-  const patchReview = useManagerDemoStore((s) => s.patchReview);
-  const demoVersion = useOwnerDemoStore((s) => s.demoVersion);
-  const selectedGroundId = useOwnerDemoStore((s) => s.selectedGroundId);
-  const setSelectedGroundId = useOwnerDemoStore((s) => s.setSelectedGroundId);
-
-  const { data: grounds } = useQuery({
-    queryKey: ["owner-grounds", demoVersion],
-    queryFn: getOwnerGrounds,
-  });
+  const { data: grounds } = useOwnerGrounds();
+  const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
 
   const groundId = selectedGroundId ?? grounds?.[0]?.id ?? "";
 
@@ -34,29 +29,27 @@ export default function OwnerReviewsScreen() {
     if (grounds?.length && !selectedGroundId) {
       setSelectedGroundId(grounds[0].id);
     }
-  }, [grounds, selectedGroundId, setSelectedGroundId]);
+  }, [grounds, selectedGroundId]);
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
-  const [submitting, setSubmitting] = useState(false);
 
-  const { data, isLoading, isError, fetchNextPage, hasNextPage, refetch } =
+  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, refetch } =
     useOwnerReviews(groundId);
+  const replyMutation = useReplyToOwnerReview(groundId);
+  const submitting = replyMutation.isPending;
 
   const reviews = data?.pages.flatMap((p) => p.items) ?? [];
 
-  function handleReplySubmit(reviewId: string) {
-    if (!replyText.trim()) return;
-    setSubmitting(true);
+  async function handleReplySubmit(reviewId: string) {
+    const text = replyText.trim();
+    if (!text) return;
     try {
-      patchReview(reviewId, {
-        manager_reply: replyText.trim(),
-        manager_reply_at: new Date().toISOString(),
-      });
+      await replyMutation.mutateAsync({ reviewId, replyText: text });
       setReplyingTo(null);
       setReplyText("");
-    } finally {
-      setSubmitting(false);
+    } catch (err) {
+      Alert.alert("Could not post reply", getApiErrorMessage(err));
     }
   }
 
@@ -136,7 +129,9 @@ export default function OwnerReviewsScreen() {
             padding: 24,
           }}
         >
-          <Text style={{ color: "#E34C3C" }}>Could not load reviews.</Text>
+          <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+            {getApiErrorMessage(error)}
+          </Text>
           <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
             <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
           </TouchableOpacity>

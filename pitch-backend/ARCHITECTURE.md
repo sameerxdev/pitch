@@ -7,15 +7,15 @@ This file explains *how* the backend is put together and *why* each piece exists
 
 ## 1. Goals
 
-- Implement the contract in `BACKEND_API_SPEC.md` so the existing pitch-mobile app can swap demo hooks for live APIs.
+- Implement the contract in `BACKEND_API_SPEC.md`. All four roles — player, manager, ground owner, admin — run on live endpoints; the mobile app has no demo-data fallback left.
 - Run self-hosted on a single VM with Docker.
-- Be easy to extend for: admin dashboard (phase 2), real SMS provider, JazzCash/Easypaisa gateway wiring.
+- Be easy to extend for: real SMS provider, JazzCash/Easypaisa gateway wiring.
 
 Non-goals:
 
 - Multi-region deployment / horizontal scaling.
-- Real-time push (push notifications are stubbed via FCM token registration).
-- Admin web UI (planned separately).
+- Real-time transport (WebSockets/SSE). Slot freshness comes from 30s client polling; out-of-band updates go through push notifications.
+- Admin web UI — administration is done from the mobile app's `(admin)` role. A web dashboard, if built, would consume the same `/admin` endpoints.
 
 ---
 
@@ -46,7 +46,8 @@ app/
   core/              Cross-cutting: settings, db client, JWT, deps, error envelope.
   schemas/           Pydantic request/response models (the API "shape").
   services/          Business logic. No HTTP types here — pure DB/domain calls.
-  api/v1/            Routers. Translate HTTP → service calls and back.
+  api/v1/            Routers (auth, users, grounds, bookings, payments, reviews,
+                     manager, owner, admin).
   utils/             ObjectId helpers, file upload helpers.
   seed.py            Dev dataset seeder.
   seed_player_bookings.py  Per-player booking seeder (status variants).
@@ -56,7 +57,7 @@ Rules of thumb:
 
 - **Routers stay thin.** They parse input, call a service, wrap the result with `success(...)`.
 - **Services stay focused.** They take a Motor `db` handle and primitive args; they don't import FastAPI or know about routers.
-- **No cross-service imports inside services** (apart from `serializers`). If two services need to coordinate (e.g. payment completion needs booking & slot updates), do it from the calling service in one place rather than weaving dependencies.
+- **No cross-service imports inside services** (apart from `serializers` and `notification_service`, both of which are leaves — they import nothing from `services/`). If two services need to coordinate (e.g. payment completion needs booking & slot updates), do it from the calling service in one place rather than weaving dependencies.
 
 ---
 
@@ -91,8 +92,13 @@ Two settings make local development painless. Both are gated on env vars and doc
 Roles are server-decided:
 
 - First-time login defaults to `player`.
-- If an owner already invited the phone via `POST /owner/grounds/{id}/managers`, the role is upgraded to `manager` on first login (the inverse path also runs when a `player` later receives an assignment).
-- `ground_owner` and `admin` are bootstrapped manually via `mongosh` (`README.md` shows the one-liner).
+- If an owner already invited the phone via `POST /owner/grounds/{id}/managers`, the role is upgraded to `manager` on first login (the inverse path also runs when a `player` later receives an assignment). Removing a manager's last active assignment demotes them back to `player`.
+- `ground_owner` is granted by an admin via `PATCH /admin/users/{id}`.
+- The first `admin` is bootstrapped via `mongosh` (`README.md` shows the one-liner); the dev seed creates one.
+
+### Suspension
+
+`PATCH /admin/users/{id}` with `is_suspended: true` deletes the user's refresh tokens and sets a flag that `get_current_user` checks on every request (403) and `verify_otp` checks at login. A suspended account cannot obtain new tokens or use existing ones.
 
 ---
 
@@ -103,13 +109,14 @@ Collections (see [`core/database.py`](./app/core/database.py) for indexes):
 | Collection | Key fields | Notes |
 |---|---|---|
 | `users` | `phone` (unique), `role` | One per phone. |
-| `grounds` | `owner_id`, `status`, `avg_rating`, `photos[]` | Status: `pending_verification` → `active` after admin verifies. |
+| `grounds` | `owner_id`, `status`, `avg_rating`, `photos[]`, `location` | Status: `pending_verification` → `active` after admin verifies. `location` is a GeoJSON Point mirroring `latitude`/`longitude`, indexed `2dsphere` to power `GET /grounds?lat=&lng=` distance sorting; it's written on create/update and backfilled at startup. |
 | `slots` | `(ground_id, date, start_hour)` unique | Status drives availability: `available` → `on_hold` → `booked`. |
 | `bookings` | `slot_id`, `player_id`, `qr_token` (unique sparse) | Status: `on_hold` → `confirmed` → `arrived` → `completed`. Or `cancelled` / `no_show`. |
 | `payments` | `booking_id` | Per-booking; method jazzcash/easypaisa. |
 | `reviews` | `booking_id` (unique) | One review per completed booking. |
-| `manager_assignments` | `(ground_id, manager_id)` unique; `manager_phone` for invites | Supports inviting a phone before the user signs up. |
+| `manager_assignments` | `(ground_id, manager_id)` unique **partial**; `manager_phone` for invites | Supports inviting a phone before the user signs up. The unique index is partial on `manager_id: {$type: "objectId"}` so several unclaimed invites (all with `manager_id: null`) can coexist on one ground. |
 | `otp_codes` | `phone`, `expires_at` (TTL) | Auto-removed on expiry. |
+| `otp_requests` | `phone`, `expires_at` (TTL) | Sliding window behind the send throttle. |
 | `refresh_tokens` | `user_id`, `token_hash` (unique), `expires_at` (TTL) | Hash stored, never the token itself. |
 
 Denormalization choices:
@@ -222,8 +229,10 @@ For a real deployment, replace the bind mount with a baked-in image, add a rever
 | A new endpoint | `app/schemas/<area>.py`, `app/api/v1/<area>.py`, and a service in `app/services/`. Register the router in `app/api/v1/router.py`. |
 | A new collection / field | Update indexes in `app/core/database.py`, the relevant service, and the serializer in `app/services/serializers.py`. |
 | Real SMS | Replace the body of `request_otp` in `app/services/auth_service.py` with the provider call; keep `verify_otp` unchanged. |
-| Real gateway | Edit `payment_service.initiate_payment` to hit the gateway, and add signature verification inside the two webhook handlers in `app/api/v1/payments.py`. |
-| Admin endpoints | New router under `app/api/v1/admin.py`, guarded by `require_admin`. |
+| Real gateway | Edit `payment_service.initiate_payment` to hit the gateway, and add signature verification inside the two webhook handlers in `app/api/v1/payments.py`. Set `PAYMENT_AUTO_COMPLETE=false`. |
+| An admin capability | `app/services/admin_service.py` + `app/api/v1/admin.py`, guarded by `require_admin`. |
+| A push notification | A `notify_*` coroutine in `app/services/notification_service.py`, fired via `notify_in_background(...)` from wherever the event happens. Add the `type` → screen mapping in the app's `src/utils/notificationRoutes.ts`. |
+| A periodic job | A function taking `db`, called from the loop in `app/services/jobs.py` (see `no_show_service.mark_missed_bookings`). |
 
 ---
 

@@ -8,7 +8,8 @@ import {
   RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { useOwnerAnalytics } from "@/hooks/useOwner";
+import { getApiErrorMessage } from "@/api/client";
 import { MetricCard } from "@/components/owner/MetricCard";
 import { RevenueChart } from "@/components/owner/RevenueChart";
 import { formatPKR } from "@/utils/format";
@@ -23,7 +24,8 @@ const PERIODS: Array<{ key: Period; label: string }> = [
 
 export default function OwnerAnalyticsScreen() {
   const [period, setPeriod] = useState<Period>("today");
-  const { data, isLoading, isError, refetch } = useAnalytics(period);
+  const { data, isLoading, isError, error, isFetching, refetch } =
+    useOwnerAnalytics(period);
 
   return (
     <SafeAreaView
@@ -33,7 +35,7 @@ export default function OwnerAnalyticsScreen() {
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 28 }}
         refreshControl={
-          <RefreshControl refreshing={false} onRefresh={() => refetch()} />
+          <RefreshControl refreshing={isFetching} onRefresh={() => refetch()} />
         }
       >
         <Text
@@ -87,7 +89,9 @@ export default function OwnerAnalyticsScreen() {
           </View>
         ) : isError ? (
           <View style={{ alignItems: "center", paddingVertical: 32 }}>
-            <Text style={{ color: "#E34C3C" }}>Could not load analytics.</Text>
+            <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+              {getApiErrorMessage(error)}
+            </Text>
             <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
               <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
             </TouchableOpacity>

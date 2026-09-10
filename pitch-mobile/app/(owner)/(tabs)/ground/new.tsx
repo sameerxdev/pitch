@@ -12,8 +12,12 @@ import {
 import { useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { useQueryClient } from "@tanstack/react-query";
-import { createGroundWithPhotos } from "@/data/ownerDemo";
+import { useCreateGround } from "@/hooks/useOwner";
+// The new ground's id only exists after creation, so the optional manager
+// invite calls the API directly rather than through a ground-bound hook.
+import { assignManager } from "@/api/owner";
+import { getApiErrorMessage } from "@/api/client";
+import { toE164Pk } from "@/utils/validators";
 import { PAKISTAN_CITIES } from "@/constants/routes";
 import { Config } from "@/constants/config";
 import { GROUND_FACILITIES, isKnownFacilityLabel } from "@/constants/facilities";
@@ -42,7 +46,7 @@ const INITIAL_FORM = {
 
 export default function CreateGroundScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const createGroundMutation = useCreateGround();
 
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -138,14 +142,26 @@ export default function CreateGroundScreen() {
       patch({ errors: { location: "Set location on step 2" }, step: 2 });
       return;
     }
+    // The address field is optional in the form but required by the API, so
+    // fall back to the area/city the owner already gave us.
+    const resolvedAddress = address.trim() || `${area.trim()}, ${city}`;
+    const invitePhone = managerPhone.trim() ? toE164Pk(managerPhone) : null;
+    if (managerPhone.trim() && !invitePhone) {
+      Alert.alert(
+        "Invalid manager number",
+        "Enter a 10-digit mobile number, e.g. 3001234567 — or leave it blank.",
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await createGroundWithPhotos(
-        {
+      const ground = await createGroundMutation.mutateAsync({
+        payload: {
           name: name.trim(),
           city,
           area: area.trim(),
-          address: address.trim(),
+          address: resolvedAddress,
           latitude: location.latitude,
           longitude: location.longitude,
           hourly_rate_day: Number(dayRate),
@@ -153,27 +169,33 @@ export default function CreateGroundScreen() {
           advance_percent: advancePercent,
           facilities: facilities.filter(isKnownFacilityLabel),
         },
-        photos,
-        managerPhone.trim() || undefined,
-      );
-      queryClient.invalidateQueries({ queryKey: ["owner-grounds"] });
+        photoUris: photos,
+      });
+
+      // A failed invite must not read as a failed ground creation.
+      let inviteWarning = "";
+      if (invitePhone) {
+        try {
+          await assignManager(ground.id, { phone: invitePhone });
+        } catch (err) {
+          inviteWarning = `\n\nThe ground was created, but the manager invite failed: ${getApiErrorMessage(err)}`;
+        }
+      }
+
       resetForm();
       Alert.alert(
         "Ground submitted!",
-        "Your ground is pending verification by the PITCH team. You'll be notified once it's approved.",
+        "Your ground is pending verification by the PITCH team. You'll be notified once it's approved." +
+          inviteWarning,
         [
           {
             text: "OK",
-            onPress: () =>
-              router.replace("/(owner)/(tabs)/grounds" as never),
+            onPress: () => router.replace("/(owner)/(tabs)/grounds" as never),
           },
         ],
       );
     } catch (err) {
-      Alert.alert(
-        "Error",
-        err instanceof Error ? err.message : "Could not save ground.",
-      );
+      Alert.alert("Error", getApiErrorMessage(err));
     } finally {
       setSubmitting(false);
     }

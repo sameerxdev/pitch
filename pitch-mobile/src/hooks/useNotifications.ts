@@ -7,6 +7,8 @@ import {
   addNotificationResponseListener,
   removeSubscription,
 } from "@/utils/notifications";
+import { routeForNotification } from "@/utils/notificationRoutes";
+import { useAuthStore } from "@/stores/authStore";
 
 export function useNotifications() {
   const router = useRouter();
@@ -21,7 +23,10 @@ export function useNotifications() {
     });
 
     responseListenerRef.current = addNotificationResponseListener((response) => {
-      const route = response.notification.request.content.data?.route as string | undefined;
+      const data = response.notification.request.content.data as
+        | Record<string, unknown>
+        | undefined;
+      const route = routeForNotification(data, useAuthStore.getState().user?.role);
       if (route) {
         router.push(route as never);
       }

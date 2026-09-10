@@ -9,23 +9,20 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FlashList } from "@shopify/flash-list";
-import { useQuery } from "@tanstack/react-query";
-import { getOwnerGrounds } from "@/data/ownerDemo";
-import { useOwnerDemoStore } from "@/stores/ownerDemoStore";
+import { useOwnerGrounds } from "@/hooks/useOwner";
+import { getApiErrorMessage } from "@/api/client";
 import { GroundStatusBadge } from "@/components/ui/Badge";
 
 export default function OwnerGroundsScreen() {
   const router = useRouter();
-  const demoVersion = useOwnerDemoStore((s) => s.demoVersion);
   const {
     data: grounds,
     isLoading,
     isError,
+    error,
+    isFetching,
     refetch,
-  } = useQuery({
-    queryKey: ["owner-grounds", demoVersion],
-    queryFn: getOwnerGrounds,
-  });
+  } = useOwnerGrounds();
 
   return (
     <SafeAreaView
@@ -74,7 +71,9 @@ export default function OwnerGroundsScreen() {
             padding: 24,
           }}
         >
-          <Text style={{ color: "#E34C3C" }}>Could not load grounds.</Text>
+          <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+            {getApiErrorMessage(error)}
+          </Text>
           <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
             <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
           </TouchableOpacity>
@@ -85,7 +84,7 @@ export default function OwnerGroundsScreen() {
           keyExtractor={(g) => g.id}
           contentContainerStyle={{ padding: 20 }}
           refreshControl={
-            <RefreshControl refreshing={false} onRefresh={() => refetch()} />
+            <RefreshControl refreshing={isFetching} onRefresh={() => refetch()} />
           }
           renderItem={({ item }) => (
             <View

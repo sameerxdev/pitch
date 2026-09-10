@@ -10,42 +10,41 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getOwnerGrounds,
-  updateGround,
-  getGroundManagers,
-  assignManager,
-  removeManager,
-} from "@/data/ownerDemo";
-import { useOwnerDemoStore } from "@/stores/ownerDemoStore";
+  useAssignManager,
+  useGroundManagers,
+  useOwnerGround,
+  useRemoveManager,
+  useUpdateGround,
+} from "@/hooks/useOwner";
+import { getApiErrorMessage } from "@/api/client";
 import { maskPhone } from "@/utils/format";
+import { toE164Pk } from "@/utils/validators";
+import type { ManagerAssignment } from "@/api/types";
+import { GroundStatusBadge } from "@/components/ui/Badge";
 
 export default function EditGroundScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const demoVersion = useOwnerDemoStore((s) => s.demoVersion);
+  const groundId = id ?? "";
 
-  const { data: grounds, isLoading } = useQuery({
-    queryKey: ["owner-grounds", demoVersion],
-    queryFn: getOwnerGrounds,
-  });
-  const ground = grounds?.find((g) => g.id === id);
+  const { data: ground, isLoading } = useOwnerGround(groundId);
+  const { data: managers } = useGroundManagers(groundId);
+  const updateGroundMutation = useUpdateGround(groundId);
+  const assignManagerMutation = useAssignManager(groundId);
+  const removeManagerMutation = useRemoveManager(groundId);
 
   const [dayRate, setDayRate] = useState("");
   const [nightRate, setNightRate] = useState("");
   const [advancePercent, setAdvancePercent] = useState(30);
-  const [saving, setSaving] = useState(false);
   const [managerPhone, setManagerPhone] = useState("");
-  const [assigningManager, setAssigningManager] = useState(false);
 
-  const groundId = id ?? "";
-  const { data: managers, refetch: refetchManagers } = useQuery({
-    queryKey: ["ground-managers", groundId, demoVersion],
-    queryFn: () => getGroundManagers(groundId),
-    enabled: !!groundId,
-  });
+  const saving = updateGroundMutation.isPending;
+  const assigningManager = assignManagerMutation.isPending;
+  // The API returns removed assignments too, so they stay auditable server-side.
+  const activeManagers = (managers ?? []).filter((m) => m.is_active);
+  const canToggleActive =
+    ground?.status === "active" || ground?.status === "inactive";
 
   useEffect(() => {
     if (!ground) return;
@@ -55,52 +54,61 @@ export default function EditGroundScreen() {
   }, [ground?.id, ground?.hourly_rate_day, ground?.hourly_rate_night, ground?.advance_percent]);
 
   async function handleSave() {
-    if (!id) return;
-    setSaving(true);
+    if (!groundId) return;
+    const day = Number(dayRate);
+    const night = Number(nightRate);
+    if (!Number.isFinite(day) || day < 100 || !Number.isFinite(night) || night < 100) {
+      Alert.alert("Invalid rates", "Day and night rates must be at least PKR 100.");
+      return;
+    }
     try {
-      await updateGround(id, {
-        hourly_rate_day: Number(dayRate),
-        hourly_rate_night: Number(nightRate),
+      await updateGroundMutation.mutateAsync({
+        hourly_rate_day: day,
+        hourly_rate_night: night,
         advance_percent: advancePercent,
       });
-      queryClient.invalidateQueries({ queryKey: ["owner-grounds"] });
       Alert.alert("Saved!", "Ground details have been updated.");
       router.back();
     } catch (err) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Could not save.");
-    } finally {
-      setSaving(false);
+      Alert.alert("Error", getApiErrorMessage(err));
     }
   }
 
   async function handleAssignManager() {
-    if (!groundId || !managerPhone.trim()) return;
-    setAssigningManager(true);
+    const phone = toE164Pk(managerPhone);
+    if (!phone) {
+      Alert.alert("Invalid number", "Enter a 10-digit mobile number, e.g. 3001234567.");
+      return;
+    }
     try {
-      const phone = managerPhone.replace(/\s/g, "");
-      await assignManager(groundId, {
-        phone: phone.startsWith("+92") ? phone : `+92${phone}`,
-      });
+      await assignManagerMutation.mutateAsync({ phone });
       setManagerPhone("");
-      await refetchManagers();
-      queryClient.invalidateQueries({ queryKey: ["owner-grounds"] });
-      Alert.alert("Manager assigned", "They can manage bookings for this ground.");
+      Alert.alert(
+        "Manager assigned",
+        "They can manage bookings for this ground once they sign in with this number.",
+      );
     } catch (err) {
-      Alert.alert("Error", err instanceof Error ? err.message : "Could not assign.");
-    } finally {
-      setAssigningManager(false);
+      Alert.alert("Error", getApiErrorMessage(err));
     }
   }
 
-  function handleRemoveManager(managerId: string, name: string) {
-    Alert.alert("Remove manager", `Remove ${name} from this ground?`, [
+  function handleRemoveManager(assignment: ManagerAssignment) {
+    const label = assignment.manager_name ?? maskPhone(assignment.manager_phone);
+    Alert.alert("Remove manager", `Remove ${label} from this ground?`, [
       { text: "Cancel", style: "cancel" },
       {
         text: "Remove",
         style: "destructive",
         onPress: async () => {
-          await removeManager(groundId, managerId);
-          await refetchManagers();
+          try {
+            // Invites that haven't been claimed yet have no user id — the
+            // assignment's own id is the only handle we have.
+            await removeManagerMutation.mutateAsync(
+              assignment.manager_id ?? assignment.id,
+            );
+          } catch (err) {
+            Alert.alert("Error", getApiErrorMessage(err));
+          }
         },
       },
     ]);
@@ -108,27 +116,39 @@ export default function EditGroundScreen() {
 
   async function handleToggleActive() {
     if (!ground) return;
+    if (ground.status === "pending_verification") {
+      Alert.alert(
+        "Awaiting verification",
+        "This ground is still being reviewed by the PITCH team. You can activate it once it's approved.",
+      );
+      return;
+    }
+    if (ground.status === "suspended") {
+      Alert.alert(
+        "Ground suspended",
+        "This ground was suspended by an administrator. Contact support to restore it.",
+      );
+      return;
+    }
     const newActive = ground.status !== "active";
     Alert.alert(
       newActive ? "Activate ground?" : "Deactivate ground?",
-      newActive ? "Players will be able to book this ground." : "No new bookings will be accepted. Existing bookings remain.",
+      newActive
+        ? "Players will be able to book this ground."
+        : "No new bookings will be accepted. Existing bookings remain.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Confirm",
           onPress: async () => {
             try {
-              await updateGround(id!, { is_active: newActive });
-              queryClient.invalidateQueries({ queryKey: ["owner-grounds"] });
+              await updateGroundMutation.mutateAsync({ is_active: newActive });
             } catch (err) {
-              Alert.alert(
-                "Error",
-                err instanceof Error ? err.message : "Could not update.",
-              );
+              Alert.alert("Error", getApiErrorMessage(err));
             }
           },
         },
-      ]
+      ],
     );
   }
 
@@ -154,7 +174,20 @@ export default function EditGroundScreen() {
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 16 }}>
         <Text style={{ fontSize: 18, fontWeight: "700", color: "#0D1F15", marginBottom: 4 }}>{ground.name}</Text>
-        <Text style={{ color: "#5A7264", marginBottom: 24 }}>{ground.area}, {ground.city}</Text>
+        <Text style={{ color: "#5A7264", marginBottom: 8 }}>{ground.area}, {ground.city}</Text>
+        <View style={{ marginBottom: 20 }}>
+          <GroundStatusBadge status={ground.status} />
+          {ground.status === "pending_verification" && (
+            <Text style={{ color: "#A0B4A8", fontSize: 12, marginTop: 6, lineHeight: 17 }}>
+              The PITCH team is reviewing this ground. It becomes bookable once approved.
+            </Text>
+          )}
+          {ground.status === "suspended" && (
+            <Text style={{ color: "#E34C3C", fontSize: 12, marginTop: 6, lineHeight: 17 }}>
+              Suspended by an administrator. Contact support to restore it.
+            </Text>
+          )}
+        </View>
 
         {/* Rates */}
         <View style={{ backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20, marginBottom: 16 }}>
@@ -199,12 +232,12 @@ export default function EditGroundScreen() {
             for this ground in the manager app.
           </Text>
 
-          {managers?.length === 0 ? (
+          {activeManagers.length === 0 ? (
             <Text style={{ color: "#A0B4A8", fontSize: 13, marginBottom: 12 }}>
               No managers assigned yet.
             </Text>
           ) : (
-            managers?.map((m) => (
+            activeManagers.map((m) => (
               <View
                 key={m.id}
                 style={{
@@ -217,14 +250,15 @@ export default function EditGroundScreen() {
               >
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontWeight: "600", color: "#0D1F15" }}>
-                    {m.manager_name}
+                    {m.manager_name ?? "Invite sent"}
                   </Text>
                   <Text style={{ color: "#5A7264", fontSize: 12 }}>
                     {maskPhone(m.manager_phone)}
+                    {m.is_pending_signup ? " · awaiting first sign-in" : ""}
                   </Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() => handleRemoveManager(m.manager_id, m.manager_name)}
+                  onPress={() => handleRemoveManager(m)}
                   style={{
                     backgroundColor: "#FDECEA",
                     borderRadius: 8,
@@ -290,10 +324,18 @@ export default function EditGroundScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Toggle active */}
+        {/* Toggle active — only meaningful once the ground is out of review. */}
         <TouchableOpacity
           onPress={handleToggleActive}
-          style={{ backgroundColor: ground.status === "active" ? "#FDECEA" : "#E8F3EE", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 24 }}
+          disabled={canToggleActive && updateGroundMutation.isPending}
+          style={{
+            backgroundColor: ground.status === "active" ? "#FDECEA" : "#E8F3EE",
+            borderRadius: 14,
+            paddingVertical: 14,
+            alignItems: "center",
+            marginBottom: 24,
+            opacity: canToggleActive ? 1 : 0.5,
+          }}
         >
           <Text style={{ color: ground.status === "active" ? "#E34C3C" : "#1A5C38", fontWeight: "700" }}>
             {ground.status === "active" ? "Deactivate Ground" : "Activate Ground"}
