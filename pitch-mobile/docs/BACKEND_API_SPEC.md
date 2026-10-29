@@ -148,6 +148,10 @@ Non-file fields in multipart: send as form fields (strings). Arrays like `facili
 Both carry `details.retry_after_seconds`. Throttling is skipped while
 `AUTH_BYPASS_OTP=true`, since no SMS is sent in that mode.
 
+| Code | Status | Condition |
+|------|--------|-----------|
+| `SMS_SEND_FAILED` | 503 | The SMS gateway (SMSGate phone) was unreachable or rejected the send. No code is stored; the request still counts towards the cooldown. Show the message and let the user retry. |
+
 ---
 
 ### 2.2 Verify OTP
@@ -1339,12 +1343,12 @@ Still outstanding, and deliberately so:
    gateway signature. `PAYMENT_AUTO_COMPLETE=true` settles payments immediately so
    the client's polling flow works end to end in development — **disable it in
    production** and wire the real gateway plus signature checks.
-2. **SMS provider.** `request_otp` generates and stores a real OTP but nothing sends
-   it. `OTP_DEBUG=true` returns it in the response and `AUTH_BYPASS_OTP=true` skips
-   verification entirely. Wire a provider inside `auth_service.request_otp`, then set
-   both flags to `false`.
-3. **Booking reminders.** The push infrastructure is in place but there's no
+2. **Booking reminders.** The push infrastructure is in place but there's no
    scheduled "your slot starts in 1 hour" job yet.
+
+OTP SMS is delivered through an SMSGate Android phone on the server's LAN — see
+`pitch-backend/SMS_OTP.md`. Production must set `SMS_PROVIDER=smsgate`,
+`OTP_DEBUG=false` and `AUTH_BYPASS_OTP=false`.
 
 ---
 

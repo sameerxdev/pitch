@@ -78,9 +78,9 @@ All endpoints are mounted under `${API_V1_PREFIX}` (default `/api/v1`).
 ## Authentication flow
 
 1. `POST /api/v1/auth/request-otp` with `{ "phone": "+923001234567" }`.
-   - Generates a 6-digit OTP. In **development** the OTP is returned in the
-     response as `debug_otp` (controlled by `OTP_DEBUG`). In production wire a
-     real SMS provider and remove that field.
+   - Generates a 6-digit OTP and sends it by SMS (see [`SMS_OTP.md`](./SMS_OTP.md)).
+     In **development** the OTP is also returned in the response as `debug_otp`
+     (controlled by `OTP_DEBUG`); turn that off in production.
 2. `POST /api/v1/auth/verify-otp` with `{ "phone": "...", "otp": "123456" }`.
    - On first verification a `users` record is created with role `player`
      (auto-promoted to `manager` if the owner has already issued an assignment
@@ -200,6 +200,10 @@ POST /api/v1/bookings/{booking_id}/complete
 | `OTP_MAX_REQUESTS_PER_HOUR` | `5` | Hourly cap per phone |
 | `OTP_DEBUG` | `true` | Return generated OTP in response (dev only) |
 | `AUTH_BYPASS_OTP` | `true` | Accept any code; skips throttling. **Disable in production** |
+| `SMS_PROVIDER` | `console` | `console` logs the OTP; `smsgate` sends it via the SMSGate phone. See [`SMS_OTP.md`](./SMS_OTP.md) |
+| `SMSGATE_URL` | — | Phone's Local Server address, e.g. `http://192.168.1.50:8080` |
+| `SMSGATE_USERNAME` / `SMSGATE_PASSWORD` | — | Shown in the SMSGate app |
+| `SMS_TIMEOUT_SECONDS` | `10` | Per-request timeout when calling the phone |
 | `PAYMENT_AUTO_COMPLETE` | `true` | Settle payments without a gateway. **Disable in production** |
 | `HOLD_DURATION_SECONDS` | `600` | 10 min hold window |
 | `PLAYER_MAX_BOOKING_DAYS_AHEAD` | `14` | |
@@ -252,9 +256,10 @@ Indexes are created automatically on startup (see `app/core/database.py`).
 
 ## Notes & limitations
 
-- **SMS provider** is not wired. `request_otp` generates and stores a real OTP but
-  nothing sends it. Replace its body with your provider's send call, then set both
-  `OTP_DEBUG=false` and `AUTH_BYPASS_OTP=false`.
+- **OTP SMS** is sent through an Android phone running SMSGate in Local Server
+  mode on the same network as the server — no paid provider. Setup, failure
+  behaviour and operating notes are in [`SMS_OTP.md`](./SMS_OTP.md). For
+  production set `SMS_PROVIDER=smsgate`, `OTP_DEBUG=false` and `AUTH_BYPASS_OTP=false`.
 - **Payment gateways** are stubbed. The webhook endpoints accept the documented
   body shape but do not verify gateway signatures. `PAYMENT_AUTO_COMPLETE=true`
   settles payments immediately so the client's polling flow works in development —
