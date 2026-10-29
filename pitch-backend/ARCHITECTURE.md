@@ -9,7 +9,7 @@ This file explains *how* the backend is put together and *why* each piece exists
 
 - Implement the contract in `BACKEND_API_SPEC.md`. All four roles — player, manager, ground owner, admin — run on live endpoints; the mobile app has no demo-data fallback left.
 - Run self-hosted on a single VM with Docker.
-- Be easy to extend for: real SMS provider, JazzCash/Easypaisa gateway wiring.
+- Be easy to extend for: JazzCash/Easypaisa gateway wiring, a different SMS provider.
 
 Non-goals:
 
@@ -57,7 +57,7 @@ Rules of thumb:
 
 - **Routers stay thin.** They parse input, call a service, wrap the result with `success(...)`.
 - **Services stay focused.** They take a Motor `db` handle and primitive args; they don't import FastAPI or know about routers.
-- **No cross-service imports inside services** (apart from `serializers` and `notification_service`, both of which are leaves — they import nothing from `services/`). If two services need to coordinate (e.g. payment completion needs booking & slot updates), do it from the calling service in one place rather than weaving dependencies.
+- **No cross-service imports inside services** (apart from `serializers`, `notification_service` and `sms_service`, all of which are leaves — they import nothing from `services/`). If two services need to coordinate (e.g. payment completion needs booking & slot updates), do it from the calling service in one place rather than weaving dependencies.
 
 ---
 
@@ -86,6 +86,14 @@ Two settings make local development painless. Both are gated on env vars and doc
 
 - `OTP_DEBUG=true` → `/auth/request-otp` returns the OTP in the response.
 - `AUTH_BYPASS_OTP=true` → `/auth/verify-otp` accepts *any* code. `request-otp` is a no-op. **Must be false in production.**
+- `SMS_PROVIDER=console` → the OTP is written to the server log instead of being sent.
+
+### OTP delivery
+
+`request_otp` hands the code to `app/services/sms_service.py`. In production that
+posts it to the SMSGate Android app (Local Server mode) on a phone on the same LAN,
+which sends it as a normal SMS. A send failure deletes the stored code and returns
+`503 SMS_SEND_FAILED`. Full rationale, setup and operations: [SMS_OTP.md](./SMS_OTP.md).
 
 ### Role assignment
 
@@ -228,7 +236,7 @@ For a real deployment, replace the bind mount with a baked-in image, add a rever
 |---|---|
 | A new endpoint | `app/schemas/<area>.py`, `app/api/v1/<area>.py`, and a service in `app/services/`. Register the router in `app/api/v1/router.py`. |
 | A new collection / field | Update indexes in `app/core/database.py`, the relevant service, and the serializer in `app/services/serializers.py`. |
-| Real SMS | Replace the body of `request_otp` in `app/services/auth_service.py` with the provider call; keep `verify_otp` unchanged. |
+| Another SMS provider | Add a `_send_via_<name>` branch in `app/services/sms_service.py` and its settings in `config.py`; raise `SmsSendError` on failure. `auth_service` stays unchanged. |
 | Real gateway | Edit `payment_service.initiate_payment` to hit the gateway, and add signature verification inside the two webhook handlers in `app/api/v1/payments.py`. Set `PAYMENT_AUTO_COMPLETE=false`. |
 | An admin capability | `app/services/admin_service.py` + `app/api/v1/admin.py`, guarded by `require_admin`. |
 | A push notification | A `notify_*` coroutine in `app/services/notification_service.py`, fired via `notify_in_background(...)` from wherever the event happens. Add the `type` → screen mapping in the app's `src/utils/notificationRoutes.ts`. |

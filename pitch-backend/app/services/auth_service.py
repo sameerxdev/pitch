@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -8,7 +9,13 @@ import jwt
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.config import settings
-from app.core.exceptions import business_rule, forbidden, unauthorized, validation_error
+from app.core.exceptions import (
+    business_rule,
+    forbidden,
+    service_unavailable,
+    unauthorized,
+    validation_error,
+)
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -17,7 +24,10 @@ from app.core.security import (
     utcnow,
     verify_secret,
 )
+from app.services import sms_service
 from app.utils.ids import to_oid
+
+logger = logging.getLogger(__name__)
 
 
 def _gen_otp(length: int) -> str:
@@ -77,6 +87,15 @@ async def request_otp(db: AsyncIOMotorDatabase, phone: str) -> dict:
             "created_at": utcnow(),
         }
     )
+    try:
+        await sms_service.send_otp(phone, code)
+    except sms_service.SmsSendError as exc:
+        # Drop the code so a later verify can't match a code nobody received.
+        await db.otp_codes.delete_many({"phone": phone})
+        logger.error("OTP SMS send failed: %s", exc)
+        raise service_unavailable(
+            "SMS_SEND_FAILED", "We couldn't send the code right now. Please try again in a minute."
+        )
     out: dict = {"expires_in": settings.OTP_TTL_SECONDS}
     if settings.OTP_DEBUG:
         out["debug_otp"] = code

@@ -37,6 +37,16 @@ class Settings(BaseSettings):
     # When true, /auth/verify-otp accepts any code and creates the user if needed.
     # /auth/request-otp becomes a no-op. DISABLE IN PRODUCTION (set AUTH_BYPASS_OTP=false in .env).
     AUTH_BYPASS_OTP: bool = True
+
+    # How OTP codes are delivered (see SMS_OTP.md):
+    #   "console" — log the code on the server (development only)
+    #   "smsgate" — send through the SMSGate Android app in Local Server mode
+    SMS_PROVIDER: str = "console"
+    # Phone's address on the local network, e.g. http://192.168.1.50:8080
+    SMSGATE_URL: str = ""
+    SMSGATE_USERNAME: str = ""
+    SMSGATE_PASSWORD: str = ""
+    SMS_TIMEOUT_SECONDS: float = 10.0
     # When true, /payments/initiate immediately marks the payment "completed" and
     # transitions the booking to "confirmed" (issuing a QR token). This lets the
     # mobile pay-screen poll succeed without a real JazzCash/Easypaisa gateway.

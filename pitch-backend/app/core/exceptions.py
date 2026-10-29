@@ -41,5 +41,9 @@ def conflict(code: str, message: str, details: Optional[dict[str, Any]] = None) 
     return AppError(409, code, message, details)
 
 
+def service_unavailable(code: str, message: str) -> AppError:
+    return AppError(503, code, message)
+
+
 def business_rule(code: str, message: str, details: Optional[dict[str, Any]] = None) -> AppError:
     return AppError(422, code, message, details)
