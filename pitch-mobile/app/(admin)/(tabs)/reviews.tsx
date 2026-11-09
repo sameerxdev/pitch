@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
@@ -15,6 +14,9 @@ import { getApiErrorMessage } from "@/api/client";
 import { Badge } from "@/components/ui/Badge";
 import { ReviewCard } from "@/components/ground/ReviewCard";
 import type { AdminReview } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
+import { IconBadge } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 type Filter = { key: string; label: string; visible?: boolean };
 
@@ -69,12 +71,12 @@ export default function AdminReviewsScreen() {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#0D1F15" }}>
+        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text }}>
           Moderation
         </Text>
-        <Text style={{ color: "#5A7264", fontSize: 13, marginTop: 4 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
           Hidden reviews are excluded from ground ratings.
         </Text>
       </View>
@@ -93,14 +95,14 @@ export default function AdminReviewsScreen() {
                 paddingHorizontal: 14,
                 paddingVertical: 6,
                 borderRadius: 20,
-                backgroundColor: filter.key === f.key ? "#1A5C38" : "#FFFFFF",
+                backgroundColor: filter.key === f.key ? colors.primary : colors.surface,
                 borderWidth: 1.5,
-                borderColor: filter.key === f.key ? "#1A5C38" : "#E2EAE5",
+                borderColor: filter.key === f.key ? colors.brand : colors.border,
               }}
             >
               <Text
                 style={{
-                  color: filter.key === f.key ? "#FFFFFF" : "#5A7264",
+                  color: filter.key === f.key ? colors.white : colors.textSecondary,
                   fontWeight: "600",
                   fontSize: 12,
                 }}
@@ -114,17 +116,17 @@ export default function AdminReviewsScreen() {
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color="#1A5C38" />
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : isError ? (
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}
         >
-          <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+          <Text style={{ color: colors.danger, textAlign: "center" }}>
             {getApiErrorMessage(error)}
           </Text>
           <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
-            <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
+            <Text style={{ color: colors.brand, fontWeight: "700" }}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -135,7 +137,7 @@ export default function AdminReviewsScreen() {
           onEndReached={() => hasNextPage && fetchNextPage()}
           onEndReachedThreshold={0.5}
           refreshControl={
-            <RefreshControl refreshing={isFetching} onRefresh={() => refetch()} />
+            <RefreshControl refreshing={isFetching} onRefresh={() => void refetch()} />
           }
           renderItem={({ item }) => (
             <View style={{ marginBottom: 16 }}>
@@ -148,7 +150,7 @@ export default function AdminReviewsScreen() {
                 }}
               >
                 <Text
-                  style={{ color: "#0D1F15", fontWeight: "700", fontSize: 13, flex: 1 }}
+                  style={{ color: colors.text, fontWeight: "700", fontSize: 13, flex: 1 }}
                   numberOfLines={1}
                 >
                   {item.ground_name || "Unknown ground"}
@@ -167,12 +169,12 @@ export default function AdminReviewsScreen() {
                   borderRadius: 10,
                   paddingHorizontal: 14,
                   paddingVertical: 8,
-                  backgroundColor: item.is_visible ? "#FDECEA" : "#E8F3EE",
+                  backgroundColor: item.is_visible ? colors.dangerSoft : colors.brandSoft,
                 }}
               >
                 <Text
                   style={{
-                    color: item.is_visible ? "#E34C3C" : "#1A5C38",
+                    color: item.is_visible ? colors.danger : colors.brand,
                     fontWeight: "700",
                     fontSize: 13,
                   }}
@@ -184,8 +186,8 @@ export default function AdminReviewsScreen() {
           )}
           ListEmptyComponent={
             <View style={{ alignItems: "center", paddingTop: 48 }}>
-              <Text style={{ fontSize: 36 }}>⭐</Text>
-              <Text style={{ color: "#5A7264", textAlign: "center", marginTop: 12 }}>
+              <IconBadge name="star" size={32} />
+              <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 12 }}>
                 {filter.key === "hidden"
                   ? "No reviews have been hidden."
                   : "No reviews yet."}

@@ -1,10 +1,8 @@
 import React, { useCallback, useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Alert,
   Image,
@@ -23,6 +21,9 @@ import { Config } from "@/constants/config";
 import { GROUND_FACILITIES, isKnownFacilityLabel } from "@/constants/facilities";
 import { GroundLocationPicker } from "@/components/owner/GroundLocationPicker";
 import type { MapCoordinate } from "@/constants/cityCoordinates";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -202,7 +203,7 @@ export default function CreateGroundScreen() {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flex: 1 }}>
         <View
           style={{
@@ -213,8 +214,8 @@ export default function CreateGroundScreen() {
           }}
         >
           <TouchableOpacity onPress={handleBack}>
-            <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-              ←
+            <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+              <Icon name="back" size={20} />
             </Text>
           </TouchableOpacity>
           <Text
@@ -222,13 +223,13 @@ export default function CreateGroundScreen() {
               flex: 1,
               textAlign: "center",
               fontWeight: "800",
-              color: "#0D1F15",
+              color: colors.text,
               fontSize: 17,
             }}
           >
             Add Ground
           </Text>
-          <Text style={{ color: "#A0B4A8", fontSize: 13 }}>{step}/5</Text>
+          <Text style={{ color: colors.textMuted, fontSize: 13 }}>{step}/5</Text>
         </View>
 
         <View
@@ -245,14 +246,14 @@ export default function CreateGroundScreen() {
                   width: 26,
                   height: 26,
                   borderRadius: 13,
-                  backgroundColor: idx + 1 <= step ? "#1A5C38" : "#E2EAE5",
+                  backgroundColor: idx + 1 <= step ? colors.primary : colors.surfaceRaised,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
                 <Text
                   style={{
-                    color: idx + 1 <= step ? "#fff" : "#A0B4A8",
+                    color: idx + 1 <= step ? colors.white : colors.textMuted,
                     fontWeight: "700",
                     fontSize: 11,
                   }}
@@ -262,7 +263,7 @@ export default function CreateGroundScreen() {
               </View>
               <Text
                 style={{
-                  color: idx + 1 === step ? "#1A5C38" : "#A0B4A8",
+                  color: idx + 1 === step ? colors.brand : colors.textMuted,
                   fontSize: 9,
                   marginTop: 4,
                   textAlign: "center",
@@ -286,7 +287,7 @@ export default function CreateGroundScreen() {
                   value={name}
                   onChangeText={(v) => patch({ name: v })}
                   placeholder="e.g. Star Cricket Ground"
-                  placeholderTextColor="#A0B4A8"
+                  placeholderTextColor={colors.textMuted}
                   style={inputStyle(!!errors.name)}
                 />
               </FormField>
@@ -302,13 +303,13 @@ export default function CreateGroundScreen() {
                         paddingVertical: 6,
                         borderRadius: 20,
                         borderWidth: 1.5,
-                        borderColor: city === c ? "#1A5C38" : "#E2EAE5",
-                        backgroundColor: city === c ? "#E8F3EE" : "#FFFFFF",
+                        borderColor: city === c ? colors.brand : colors.border,
+                        backgroundColor: city === c ? colors.brandSoft : colors.surface,
                       }}
                     >
                       <Text
                         style={{
-                          color: city === c ? "#1A5C38" : "#5A7264",
+                          color: city === c ? colors.brand : colors.textSecondary,
                           fontWeight: "600",
                           fontSize: 12,
                         }}
@@ -325,7 +326,7 @@ export default function CreateGroundScreen() {
                   value={area}
                   onChangeText={(v) => patch({ area: v })}
                   placeholder="e.g. DHA Phase 5"
-                  placeholderTextColor="#A0B4A8"
+                  placeholderTextColor={colors.textMuted}
                   style={inputStyle(!!errors.area)}
                 />
               </FormField>
@@ -335,7 +336,7 @@ export default function CreateGroundScreen() {
                   value={address}
                   onChangeText={(v) => patch({ address: v })}
                   placeholder="Street address"
-                  placeholderTextColor="#A0B4A8"
+                  placeholderTextColor={colors.textMuted}
                   multiline
                   style={[inputStyle(false), { minHeight: 70 }]}
                 />
@@ -365,7 +366,7 @@ export default function CreateGroundScreen() {
                   onChangeText={(v) => patch({ dayRate: v })}
                   placeholder="e.g. 2000"
                   keyboardType="numeric"
-                  placeholderTextColor="#A0B4A8"
+                  placeholderTextColor={colors.textMuted}
                   style={inputStyle(!!errors.dayRate)}
                 />
               </FormField>
@@ -375,7 +376,7 @@ export default function CreateGroundScreen() {
                   onChangeText={(v) => patch({ nightRate: v })}
                   placeholder="e.g. 3000"
                   keyboardType="numeric"
-                  placeholderTextColor="#A0B4A8"
+                  placeholderTextColor={colors.textMuted}
                   style={inputStyle(!!errors.nightRate)}
                 />
               </FormField>
@@ -384,7 +385,7 @@ export default function CreateGroundScreen() {
                   Advance Percentage: {advancePercent}%
                 </Text>
                 <Text
-                  style={{ color: "#5A7264", fontSize: 12, marginBottom: 12 }}
+                  style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 12 }}
                 >
                   Players must pay this % upfront to confirm booking (10–50%).
                 </Text>
@@ -398,15 +399,15 @@ export default function CreateGroundScreen() {
                         paddingVertical: 8,
                         borderRadius: 20,
                         backgroundColor:
-                          advancePercent === p ? "#1A5C38" : "#FFFFFF",
+                          advancePercent === p ? colors.primary : colors.surface,
                         borderWidth: 1.5,
                         borderColor:
-                          advancePercent === p ? "#1A5C38" : "#E2EAE5",
+                          advancePercent === p ? colors.brand : colors.border,
                       }}
                     >
                       <Text
                         style={{
-                          color: advancePercent === p ? "#FFFFFF" : "#5A7264",
+                          color: advancePercent === p ? colors.white : colors.textSecondary,
                           fontWeight: "700",
                         }}
                       >
@@ -436,19 +437,19 @@ export default function CreateGroundScreen() {
                       borderRadius: 20,
                       borderWidth: 1.5,
                       borderColor: facilities.includes(label)
-                        ? "#1A5C38"
-                        : "#E2EAE5",
+                        ? colors.brand
+                        : colors.border,
                       backgroundColor: facilities.includes(label)
-                        ? "#E8F3EE"
-                        : "#FFFFFF",
+                        ? colors.brandSoft
+                        : colors.surface,
                     }}
                   >
-                    <Text style={{ fontSize: 16 }}>{icon}</Text>
+                    <Icon name={icon} size={16} color={colors.brand} />
                     <Text
                       style={{
                         color: facilities.includes(label)
-                          ? "#1A5C38"
-                          : "#5A7264",
+                          ? colors.brand
+                          : colors.textSecondary,
                         fontWeight: "600",
                       }}
                     >
@@ -467,7 +468,7 @@ export default function CreateGroundScreen() {
                   Ground Photos ({photos.length}/{Config.MAX_GROUND_PHOTOS})
                 </Text>
                 <Text
-                  style={{ color: "#5A7264", fontSize: 12, marginBottom: 16 }}
+                  style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 16 }}
                 >
                   Add up to 8 photos of your ground.
                 </Text>
@@ -491,12 +492,12 @@ export default function CreateGroundScreen() {
                           width: 22,
                           height: 22,
                           borderRadius: 11,
-                          backgroundColor: "#E34C3C",
+                          backgroundColor: colors.dangerFill,
                           alignItems: "center",
                           justifyContent: "center",
                         }}
                       >
-                        <Text style={{ color: "#fff", fontSize: 12 }}>✕</Text>
+                        <Text style={{ color: colors.white, fontSize: 12 }}><Icon name="close" size={15} /></Text>
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -509,12 +510,12 @@ export default function CreateGroundScreen() {
                         borderRadius: 10,
                         borderWidth: 2,
                         borderStyle: "dashed",
-                        borderColor: "#C5DFD1",
+                        borderColor: colors.brandBorder,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Text style={{ color: "#1A5C38", fontSize: 28 }}>+</Text>
+                      <Text style={{ color: colors.brand, fontSize: 28 }}>+</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -522,7 +523,7 @@ export default function CreateGroundScreen() {
 
               <View
                 style={{
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: colors.surface,
                   borderRadius: 16,
                   padding: 16,
                 }}
@@ -530,7 +531,7 @@ export default function CreateGroundScreen() {
                 <Text style={labelStyle}>Assign manager (optional)</Text>
                 <Text
                   style={{
-                    color: "#5A7264",
+                    color: colors.textSecondary,
                     fontSize: 12,
                     marginBottom: 12,
                     lineHeight: 18,
@@ -544,14 +545,14 @@ export default function CreateGroundScreen() {
                     flexDirection: "row",
                     alignItems: "center",
                     borderWidth: 1.5,
-                    borderColor: "#E2EAE5",
+                    borderColor: colors.border,
                     borderRadius: 12,
                     paddingHorizontal: 12,
-                    backgroundColor: "#F3F5F2",
+                    backgroundColor: colors.bg,
                   }}
                 >
                   <Text
-                    style={{ color: "#5A7264", marginRight: 8, fontWeight: "600" }}
+                    style={{ color: colors.textSecondary, marginRight: 8, fontWeight: "600" }}
                   >
                     +92
                   </Text>
@@ -559,14 +560,14 @@ export default function CreateGroundScreen() {
                     value={managerPhone}
                     onChangeText={(v) => patch({ managerPhone: v })}
                     placeholder="3001234567"
-                    placeholderTextColor="#A0B4A8"
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="phone-pad"
                     maxLength={10}
                     style={{
                       flex: 1,
                       paddingVertical: 12,
                       fontSize: 16,
-                      color: "#0D1F15",
+                      color: colors.text,
                     }}
                   />
                 </View>
@@ -578,16 +579,16 @@ export default function CreateGroundScreen() {
         <View
           style={{
             padding: 16,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderTopWidth: 1,
-            borderTopColor: "#E2EAE5",
+            borderTopColor: colors.border,
           }}
         >
           <TouchableOpacity
             onPress={step < 5 ? handleNext : handleSubmit}
             disabled={submitting}
             style={{
-              backgroundColor: "#1A5C38",
+              backgroundColor: colors.accent,
               borderRadius: 14,
               paddingVertical: 16,
               alignItems: "center",
@@ -595,10 +596,10 @@ export default function CreateGroundScreen() {
             }}
           >
             {submitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onAccent} />
             ) : (
-              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-                {step < 5 ? "Next →" : "Submit for Review ✓"}
+              <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
+                {step < 5 ? "Next" : "Submit for Review"}
               </Text>
             )}
           </TouchableOpacity>
@@ -609,21 +610,21 @@ export default function CreateGroundScreen() {
 }
 
 const labelStyle = {
-  color: "#0D1F15",
+  color: colors.text,
   fontWeight: "600" as const,
   fontSize: 14,
   marginBottom: 8,
 };
-const errorStyle = { color: "#E34C3C", fontSize: 12, marginTop: 4 };
+const errorStyle = { color: colors.danger, fontSize: 12, marginTop: 4 };
 const inputStyle = (hasError: boolean) => ({
   borderWidth: 1.5,
-  borderColor: hasError ? "#E34C3C" : "#E2EAE5",
+  borderColor: hasError ? colors.danger : colors.border,
   borderRadius: 12,
-  backgroundColor: "#FFFFFF",
+  backgroundColor: colors.surface,
   paddingHorizontal: 16,
   paddingVertical: 14,
   fontSize: 16,
-  color: "#0D1F15" as const,
+  color: colors.text,
 });
 
 function FormField({

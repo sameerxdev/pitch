@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -20,6 +19,9 @@ import {
 } from "@/utils/format";
 import { getApiErrorMessage } from "@/api/client";
 import { useArriveBooking } from "@/hooks/useManagerMutations";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,25 +38,25 @@ export default function BookingDetailScreen() {
       <SafeAreaView
         style={{
           flex: 1,
-          backgroundColor: "#F3F5F2",
+          backgroundColor: colors.bg,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator size="large" color="#1A5C38" />
+        <ActivityIndicator size="large" color={colors.brand} />
       </SafeAreaView>
     );
   }
 
   if (isFetched && !booking) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2", padding: 24 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24 }}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-            ←
+          <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+            <Icon name="back" size={20} />
           </Text>
         </TouchableOpacity>
-        <Text style={{ color: "#5A7264", marginTop: 24 }}>
+        <Text style={{ color: colors.textSecondary, marginTop: 24 }}>
           Booking not found for this ground.
         </Text>
       </SafeAreaView>
@@ -89,7 +91,7 @@ export default function BookingDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View
         style={{
           flexDirection: "row",
@@ -99,8 +101,8 @@ export default function BookingDetailScreen() {
         }}
       >
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-            ←
+          <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+            <Icon name="back" size={20} />
           </Text>
         </TouchableOpacity>
         <Text
@@ -109,7 +111,7 @@ export default function BookingDetailScreen() {
             textAlign: "center",
             fontSize: 18,
             fontWeight: "800",
-            color: "#0D1F15",
+            color: colors.text,
           }}
         >
           Booking Detail
@@ -124,7 +126,7 @@ export default function BookingDetailScreen() {
             marginBottom: 20,
           }}
         >
-          <Text style={{ color: "#5A7264", fontWeight: "600" }}>
+          <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>
             #{bookingRef}
           </Text>
           <BookingStatusBadge status={booking.status} />
@@ -132,14 +134,14 @@ export default function BookingDetailScreen() {
 
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 16,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}
           >
             Booking Info
           </Text>
@@ -160,14 +162,14 @@ export default function BookingDetailScreen() {
 
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 16,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}
           >
             Payment
           </Text>
@@ -191,28 +193,28 @@ export default function BookingDetailScreen() {
             <TouchableOpacity
               onPress={() => router.push("/(manager)/scan" as never)}
               style={{
-                backgroundColor: "#E8F3EE",
+                backgroundColor: colors.brandSoft,
                 borderRadius: 14,
                 paddingVertical: 16,
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: "#1A5C38", fontWeight: "700" }}>
-                📷 Scan QR code
+              <Text style={{ color: colors.brand, fontWeight: "700" }}>
+                <Icon name="camera" size={15} />{" "}Scan QR code
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setManualArrivalOpen(true)}
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderRadius: 14,
                 paddingVertical: 16,
                 alignItems: "center",
                 borderWidth: 1.5,
-                borderColor: "#1A5C38",
+                borderColor: colors.brand,
               }}
             >
-              <Text style={{ color: "#1A5C38", fontWeight: "700" }}>
+              <Text style={{ color: colors.brand, fontWeight: "700" }}>
                 Manual confirmation
               </Text>
             </TouchableOpacity>
@@ -225,15 +227,15 @@ export default function BookingDetailScreen() {
               router.push(`/(manager)/booking/${id}/complete` as never)
             }
             style={{
-              backgroundColor: "#1A5C38",
+              backgroundColor: colors.accent,
               borderRadius: 14,
               paddingVertical: 16,
               alignItems: "center",
               marginBottom: 12,
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-              Complete Booking →
+            <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
+              Complete Booking <Icon name="forward" size={15} />
             </Text>
           </TouchableOpacity>
         )}
@@ -254,7 +256,7 @@ export default function BookingDetailScreen() {
         >
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               padding: 24,
@@ -264,18 +266,18 @@ export default function BookingDetailScreen() {
               style={{
                 fontWeight: "800",
                 fontSize: 18,
-                color: "#0D1F15",
+                color: colors.text,
                 marginBottom: 8,
               }}
             >
               Confirm arrival
             </Text>
-            <Text style={{ color: "#5A7264", fontSize: 14, marginBottom: 16 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 16 }}>
               Check the details below, then confirm the player is at the ground.
             </Text>
             <View
               style={{
-                backgroundColor: "#F3F5F2",
+                backgroundColor: colors.bg,
                 borderRadius: 14,
                 padding: 16,
                 marginBottom: 20,
@@ -305,13 +307,13 @@ export default function BookingDetailScreen() {
                 style={{
                   flex: 1,
                   borderWidth: 1.5,
-                  borderColor: "#E2EAE5",
+                  borderColor: colors.border,
                   borderRadius: 12,
                   paddingVertical: 14,
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: "#5A7264", fontWeight: "700" }}>
+                <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>
                   Cancel
                 </Text>
               </TouchableOpacity>
@@ -320,7 +322,7 @@ export default function BookingDetailScreen() {
                 disabled={arriveMutation.isPending}
                 style={{
                   flex: 1,
-                  backgroundColor: "#1A5C38",
+                  backgroundColor: colors.accent,
                   borderRadius: 12,
                   paddingVertical: 14,
                   alignItems: "center",
@@ -328,9 +330,9 @@ export default function BookingDetailScreen() {
                 }}
               >
                 {arriveMutation.isPending ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.onAccent} />
                 ) : (
-                  <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+                  <Text style={{ color: colors.onAccent, fontWeight: "700" }}>
                     Confirm arrival
                   </Text>
                 )}
@@ -346,10 +348,10 @@ export default function BookingDetailScreen() {
 function DetailLine({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ marginBottom: 10 }}>
-      <Text style={{ color: "#5A7264", fontSize: 12, marginBottom: 2 }}>
+      <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 2 }}>
         {label}
       </Text>
-      <Text style={{ color: "#0D1F15", fontSize: 15, fontWeight: "600" }}>
+      <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600" }}>
         {value}
       </Text>
     </View>
@@ -373,10 +375,10 @@ function Row({
         marginBottom: 8,
       }}
     >
-      <Text style={{ color: "#5A7264", fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{label}</Text>
       <Text
         style={{
-          color: highlight ? "#1A5C38" : "#0D1F15",
+          color: highlight ? colors.brand : colors.text,
           fontWeight: "600",
           fontSize: 14,
         }}

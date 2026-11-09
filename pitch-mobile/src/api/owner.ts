@@ -1,3 +1,4 @@
+import type { AnalyticsRange } from "@/api/types";
 import { apiClient } from "./client";
 import type {
   ApplySlotsRequest,
@@ -144,7 +145,8 @@ export async function removeManager(
 // ─── Analytics & reviews ─────────────────────────────────────────────────────
 
 export async function getOwnerAnalytics(params: {
-  period: "today" | "week" | "month";
+  period: AnalyticsRange;
+  anchor: string;
   ground_id?: string;
 }): Promise<OwnerAnalytics> {
   const { data } = await apiClient.get<{ data: OwnerAnalytics }>(

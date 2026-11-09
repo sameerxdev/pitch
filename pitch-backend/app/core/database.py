@@ -72,8 +72,9 @@ def to_geojson(longitude: float, latitude: float) -> dict:
 
 async def ensure_indexes() -> None:
     db = get_db()
-    # Superseded by the partial variant below; drop before recreating.
+    # Superseded by the partial variants below; drop before recreating.
     await _drop_index_if_exists(db.manager_assignments, "ground_id_1_manager_id_1")
+    await _drop_index_if_exists(db.bookings, "qr_token_1")
 
     await db.users.create_index("phone", unique=True)
     await db.users.create_index("role")
@@ -91,7 +92,15 @@ async def ensure_indexes() -> None:
     await db.bookings.create_index([("player_id", 1), ("created_at", -1)])
     await db.bookings.create_index([("ground_id", 1), ("slot_date", 1), ("status", 1)])
     await db.bookings.create_index("slot_id")
-    await db.bookings.create_index("qr_token", unique=True, sparse=True)
+    # Partial, not sparse: held and hold-expired bookings store qr_token: null,
+    # and a sparse unique index still indexes explicit nulls — the second
+    # unpaid hold on the platform would hit E11000.
+    await db.bookings.create_index(
+        "qr_token",
+        unique=True,
+        partialFilterExpression={"qr_token": {"$type": "string"}},
+        name="qr_token_unique",
+    )
 
     await db.payments.create_index("booking_id")
     await db.payments.create_index("gateway_txn_id", sparse=True)

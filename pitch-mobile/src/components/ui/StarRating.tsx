@@ -1,5 +1,9 @@
 import React from "react";
-import { View, TouchableOpacity, Text } from "react-native";
+import { View, TouchableOpacity } from "react-native";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
+import { hapticTap } from "@/utils/haptics";
 
 interface StarRatingProps {
   value: number;
@@ -8,23 +12,28 @@ interface StarRatingProps {
   readonly?: boolean;
 }
 
-const sizeMap = { sm: "text-sm", md: "text-xl", lg: "text-3xl" };
+const sizeMap = { sm: 14, md: 22, lg: 34 };
 
 export function StarRating({ value, onChange, size = "md", readonly = false }: StarRatingProps) {
-  const textSize = sizeMap[size];
-
   return (
     <View className="flex-row">
       {[1, 2, 3, 4, 5].map((star) => (
         <TouchableOpacity
           key={star}
-          onPress={() => onChange?.(star)}
+          onPress={() => {
+            hapticTap();
+            onChange?.(star);
+          }}
           disabled={readonly || !onChange}
           accessibilityRole="button"
           accessibilityLabel={`Rate ${star} star${star !== 1 ? "s" : ""}`}
           className="mr-0.5"
         >
-          <Text className={textSize}>{star <= value ? "★" : "☆"}</Text>
+          <Icon
+            name={star <= value ? "star" : "starOutline"}
+            size={sizeMap[size]}
+            color={star <= value ? colors.amber : colors.textMuted}
+          />
         </TouchableOpacity>
       ))}
     </View>
@@ -34,7 +43,7 @@ export function StarRating({ value, onChange, size = "md", readonly = false }: S
 export function RatingDisplay({ value, count }: { value: number; count?: number }) {
   return (
     <View className="flex-row items-center gap-1">
-      <Text className="text-amber text-sm">★</Text>
+      <Icon name="star" size={13} color={colors.amber} />
       <Text className="text-pitch-text font-bold text-sm">{value.toFixed(1)}</Text>
       {count !== undefined && (
         <Text className="text-pitch-secondary text-xs">({count})</Text>

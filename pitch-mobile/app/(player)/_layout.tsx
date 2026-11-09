@@ -1,25 +1,15 @@
 import React from "react";
+import { TabIcon, useTabScreenOptions, HIDDEN_TAB } from "@/components/ui/tabs";
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
+
 import { RoleGuard } from "@/components/RoleGuard";
 
-function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{icon}</Text>
-  );
-}
-
 export default function PlayerLayout() {
+  const tabScreenOptions = useTabScreenOptions();
   return (
     <RoleGuard role="player">
       <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: "#1A5C38",
-          tabBarInactiveTintColor: "#A0B4A8",
-          tabBarStyle: { borderTopColor: "#E2EAE5", paddingBottom: 4 },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
-        }}
+        screenOptions={tabScreenOptions}
       >
         {/* ── Visible tabs ── */}
         <Tabs.Screen
@@ -27,7 +17,7 @@ export default function PlayerLayout() {
           options={{
             title: "Browse",
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="🏟️" focused={focused} />
+              <TabIcon icon="stadium" focused={focused} />
             ),
           }}
         />
@@ -36,7 +26,7 @@ export default function PlayerLayout() {
           options={{
             title: "Explore",
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="🔎" focused={focused} />
+              <TabIcon icon="explore" focused={focused} />
             ),
           }}
         />
@@ -45,7 +35,7 @@ export default function PlayerLayout() {
           options={{
             title: "Bookings",
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="📋" focused={focused} />
+              <TabIcon icon="bookings" focused={focused} />
             ),
           }}
         />
@@ -54,19 +44,19 @@ export default function PlayerLayout() {
           options={{
             title: "Profile",
             tabBarIcon: ({ focused }) => (
-              <TabIcon icon="👤" focused={focused} />
+              <TabIcon icon="profile" focused={focused} />
             ),
           }}
         />
 
         {/* ── Hidden routes (no tab icon) ── */}
-        <Tabs.Screen name="ground/[id]" options={{ href: null }} />
-        <Tabs.Screen name="ground/[id]/slots" options={{ href: null }} />
-        <Tabs.Screen name="booking/summary" options={{ href: null }} />
-        <Tabs.Screen name="booking/[id]/confirmed" options={{ href: null }} />
-        <Tabs.Screen name="booking/[id]/pay" options={{ href: null }} />
-        <Tabs.Screen name="booking/[id]/qr" options={{ href: null }} />
-        <Tabs.Screen name="booking/[id]/review" options={{ href: null }} />
+        <Tabs.Screen name="ground/[id]" options={HIDDEN_TAB} />
+        <Tabs.Screen name="ground/[id]/slots" options={HIDDEN_TAB} />
+        <Tabs.Screen name="booking/summary" options={HIDDEN_TAB} />
+        <Tabs.Screen name="booking/[id]/confirmed" options={HIDDEN_TAB} />
+        <Tabs.Screen name="booking/[id]/pay" options={HIDDEN_TAB} />
+        <Tabs.Screen name="booking/[id]/qr" options={HIDDEN_TAB} />
+        <Tabs.Screen name="booking/[id]/review" options={HIDDEN_TAB} />
       </Tabs>
     </RoleGuard>
   );

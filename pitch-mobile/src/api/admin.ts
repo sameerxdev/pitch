@@ -1,3 +1,4 @@
+import type { AnalyticsRange } from "@/api/types";
 import { apiClient } from "./client";
 import type {
   AdminGround,
@@ -10,11 +11,12 @@ import type {
 } from "./types";
 
 export async function getPlatformAnalytics(
-  period: "today" | "week" | "month",
+  period: AnalyticsRange,
+  anchor: string,
 ): Promise<PlatformAnalytics> {
   const { data } = await apiClient.get<{ data: PlatformAnalytics }>(
     "/admin/analytics",
-    { params: { period } },
+    { params: { period, anchor } },
   );
   return data.data;
 }

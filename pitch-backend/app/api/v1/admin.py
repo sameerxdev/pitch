@@ -23,11 +23,12 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/analytics")
 async def platform_analytics(
-    period: str = Query("week", pattern="^(today|week|month)$"),
+    period: str = Query("week", pattern="^(day|today|week|month)$"),
+    anchor: Optional[str] = None,
     _admin=Depends(require_admin),
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
-    return success(await admin_service.get_platform_analytics(db, period=period))
+    return success(await admin_service.get_platform_analytics(db, period=period, anchor=anchor))
 
 
 # ---- Grounds ----------------------------------------------------------------

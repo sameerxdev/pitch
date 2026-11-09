@@ -19,7 +19,7 @@ export function Card({ children, padding = "md", shadow = true, className = "", 
     <View
       {...props}
       className={[
-        "bg-white rounded-2xl",
+        "bg-pitch-card rounded-2xl",
         paddingMap[padding],
         shadow ? "shadow-sm" : "",
         className,

@@ -1,7 +1,6 @@
 import React, { useState, useRef } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
@@ -14,6 +13,9 @@ import { ScannerOverlay } from "@/components/manager/ScannerOverlay";
 import { useManagerStore } from "@/stores/managerStore";
 import { formatSlotRange } from "@/utils/format";
 import { useArriveBooking } from "@/hooks/useManagerMutations";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 type ScanState = "idle" | "loading" | "success" | "error";
 
@@ -39,27 +41,27 @@ export default function QRScannerScreen() {
       <SafeAreaView
         style={{
           flex: 1,
-          backgroundColor: "#000",
+          backgroundColor: colors.black,
           alignItems: "center",
           justifyContent: "center",
           padding: 24,
         }}
       >
         <Text
-          style={{ color: "#FFFFFF", textAlign: "center", marginBottom: 20 }}
+          style={{ color: colors.white, textAlign: "center", marginBottom: 20 }}
         >
           Camera permission is required to scan QR codes.
         </Text>
         <TouchableOpacity
           onPress={requestPermission}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.primary,
             borderRadius: 12,
             paddingHorizontal: 24,
             paddingVertical: 12,
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+          <Text style={{ color: colors.white, fontWeight: "700" }}>
             Grant Permission
           </Text>
         </TouchableOpacity>
@@ -110,7 +112,7 @@ export default function QRScannerScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: colors.black }}>
       {scanState === "idle" || scanState === "loading" ? (
         <CameraView
           style={{ flex: 1 }}
@@ -131,7 +133,7 @@ export default function QRScannerScreen() {
                 justifyContent: "center",
               }}
             >
-              <ActivityIndicator size="large" color="#FFFFFF" />
+              <ActivityIndicator size="large" color={colors.white} />
             </View>
           )}
 
@@ -156,7 +158,7 @@ export default function QRScannerScreen() {
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: "#fff" }}>✕</Text>
+                <Icon name="close" size={22} color={colors.white} />
               </TouchableOpacity>
             </View>
           </SafeAreaView>
@@ -165,18 +167,18 @@ export default function QRScannerScreen() {
         <SafeAreaView
           style={{
             flex: 1,
-            backgroundColor: scanState === "success" ? "#1A5C38" : "#E34C3C",
+            backgroundColor: scanState === "success" ? colors.primary : colors.dangerFill,
             alignItems: "center",
             justifyContent: "center",
             padding: 32,
           }}
         >
           <Text style={{ fontSize: 60 }}>
-            {scanState === "success" ? "✅" : "❌"}
+            <Icon name={scanState === "success" ? "checkCircle" : "errorCircle"} size={48} color={colors.white} />
           </Text>
           <Text
             style={{
-              color: "#FFFFFF",
+              color: colors.white,
               fontSize: 22,
               fontWeight: "800",
               marginTop: 20,
@@ -217,7 +219,7 @@ export default function QRScannerScreen() {
               paddingVertical: 14,
             }}
           >
-            <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>
+            <Text style={{ color: colors.white, fontWeight: "700" }}>
               {scanState === "success" ? "Scan Another" : "Try Again"}
             </Text>
           </TouchableOpacity>

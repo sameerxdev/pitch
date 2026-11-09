@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
@@ -21,6 +19,9 @@ import { getApiErrorMessage } from "@/api/client";
 import { GroundStatusBadge } from "@/components/ui/Badge";
 import { formatPKR, maskPhone } from "@/utils/format";
 import type { AdminGround } from "@/api/types";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { IconBadge } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 type Filter = { key: string; label: string; status?: string };
 
@@ -133,9 +134,9 @@ export default function AdminGroundsScreen() {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#0D1F15" }}>
+        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text }}>
           Grounds
         </Text>
         <TextInput
@@ -144,16 +145,16 @@ export default function AdminGroundsScreen() {
           onSubmitEditing={() => setSubmittedSearch(search.trim())}
           returnKeyType="search"
           placeholder="Search name, area or city"
-          placeholderTextColor="#A0B4A8"
+          placeholderTextColor={colors.textMuted}
           style={{
             marginTop: 12,
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 12,
             paddingHorizontal: 14,
             paddingVertical: 10,
-            color: "#0D1F15",
+            color: colors.text,
             borderWidth: 1.5,
-            borderColor: "#E2EAE5",
+            borderColor: colors.border,
           }}
         />
       </View>
@@ -176,14 +177,14 @@ export default function AdminGroundsScreen() {
                 paddingHorizontal: 14,
                 paddingVertical: 6,
                 borderRadius: 20,
-                backgroundColor: filter.key === f.key ? "#1A5C38" : "#FFFFFF",
+                backgroundColor: filter.key === f.key ? colors.primary : colors.surface,
                 borderWidth: 1.5,
-                borderColor: filter.key === f.key ? "#1A5C38" : "#E2EAE5",
+                borderColor: filter.key === f.key ? colors.brand : colors.border,
               }}
             >
               <Text
                 style={{
-                  color: filter.key === f.key ? "#FFFFFF" : "#5A7264",
+                  color: filter.key === f.key ? colors.white : colors.textSecondary,
                   fontWeight: "600",
                   fontSize: 12,
                 }}
@@ -197,17 +198,17 @@ export default function AdminGroundsScreen() {
 
       {isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator size="large" color="#1A5C38" />
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : isError ? (
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}
         >
-          <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+          <Text style={{ color: colors.danger, textAlign: "center" }}>
             {getApiErrorMessage(error)}
           </Text>
           <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
-            <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
+            <Text style={{ color: colors.brand, fontWeight: "700" }}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -218,12 +219,12 @@ export default function AdminGroundsScreen() {
           onEndReached={() => hasNextPage && fetchNextPage()}
           onEndReachedThreshold={0.5}
           refreshControl={
-            <RefreshControl refreshing={isFetching} onRefresh={() => refetch()} />
+            <RefreshControl refreshing={isFetching} onRefresh={() => void refetch()} />
           }
           renderItem={({ item }) => (
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderRadius: 16,
                 padding: 16,
                 marginBottom: 12,
@@ -232,27 +233,27 @@ export default function AdminGroundsScreen() {
               <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
                 <View style={{ flex: 1, marginRight: 8 }}>
                   <Text
-                    style={{ fontWeight: "700", color: "#0D1F15", fontSize: 16 }}
+                    style={{ fontWeight: "700", color: colors.text, fontSize: 16 }}
                     numberOfLines={2}
                   >
                     {item.name}
                   </Text>
-                  <Text style={{ color: "#5A7264", fontSize: 13, marginTop: 2 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
                     {item.area}, {item.city}
                   </Text>
                 </View>
                 <GroundStatusBadge status={item.status} />
               </View>
 
-              <Text style={{ color: "#5A7264", fontSize: 12, marginTop: 10 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 10 }}>
                 Owner: {item.owner_name ?? "Unnamed"}
                 {item.owner_phone ? ` · ${maskPhone(item.owner_phone)}` : ""}
               </Text>
-              <Text style={{ color: "#5A7264", fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
                 {formatPKR(item.hourly_rate_day)}/hr day ·{" "}
                 {formatPKR(item.hourly_rate_night)}/hr night · {item.advance_percent}% advance
               </Text>
-              <Text style={{ color: "#A0B4A8", fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
                 {item.manager_count} manager{item.manager_count === 1 ? "" : "s"} ·{" "}
                 {item.booking_count} booking{item.booking_count === 1 ? "" : "s"} ·{" "}
                 {item.photos.length} photo{item.photos.length === 1 ? "" : "s"}
@@ -274,18 +275,18 @@ export default function AdminGroundsScreen() {
                         setRejectReason("");
                         setRejecting(item);
                       }}
-                      style={{ ...actionBtn, backgroundColor: "#FDECEA" }}
+                      style={{ ...actionBtn, backgroundColor: colors.dangerSoft }}
                     >
-                      <Text style={{ color: "#E34C3C", fontWeight: "700", fontSize: 13 }}>
+                      <Text style={{ color: colors.danger, fontWeight: "700", fontSize: 13 }}>
                         Reject
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       disabled={busy}
                       onPress={() => handleApprove(item)}
-                      style={{ ...actionBtn, backgroundColor: "#1A5C38" }}
+                      style={{ ...actionBtn, backgroundColor: colors.primary }}
                     >
-                      <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 13 }}>
+                      <Text style={{ color: colors.white, fontWeight: "700", fontSize: 13 }}>
                         Approve
                       </Text>
                     </TouchableOpacity>
@@ -297,12 +298,12 @@ export default function AdminGroundsScreen() {
                     style={{
                       ...actionBtn,
                       backgroundColor:
-                        item.status === "suspended" ? "#E8F3EE" : "#FDECEA",
+                        item.status === "suspended" ? colors.brandSoft : colors.dangerSoft,
                     }}
                   >
                     <Text
                       style={{
-                        color: item.status === "suspended" ? "#1A5C38" : "#E34C3C",
+                        color: item.status === "suspended" ? colors.brand : colors.danger,
                         fontWeight: "700",
                         fontSize: 13,
                       }}
@@ -316,8 +317,8 @@ export default function AdminGroundsScreen() {
           )}
           ListEmptyComponent={
             <View style={{ alignItems: "center", paddingTop: 48 }}>
-              <Text style={{ fontSize: 36 }}>🏟️</Text>
-              <Text style={{ color: "#5A7264", textAlign: "center", marginTop: 12 }}>
+              <IconBadge name="stadium" size={32} />
+              <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 12 }}>
                 {filter.key === "pending"
                   ? "Nothing waiting for verification."
                   : "No grounds match this filter."}
@@ -341,11 +342,11 @@ export default function AdminGroundsScreen() {
             padding: 24,
           }}
         >
-          <View style={{ backgroundColor: "#FFFFFF", borderRadius: 20, padding: 20 }}>
-            <Text style={{ fontSize: 17, fontWeight: "800", color: "#0D1F15" }}>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20 }}>
+            <Text style={{ fontSize: 17, fontWeight: "800", color: colors.text }}>
               Reject ground
             </Text>
-            <Text style={{ color: "#5A7264", fontSize: 13, marginTop: 6, lineHeight: 19 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 6, lineHeight: 19 }}>
               {rejecting?.name} will be set to inactive. The owner is notified with
               the reason below.
             </Text>
@@ -353,7 +354,7 @@ export default function AdminGroundsScreen() {
               value={rejectReason}
               onChangeText={setRejectReason}
               placeholder="e.g. Photos don't show the pitch clearly"
-              placeholderTextColor="#A0B4A8"
+              placeholderTextColor={colors.textMuted}
               multiline
               autoFocus
               maxLength={500}
@@ -361,10 +362,10 @@ export default function AdminGroundsScreen() {
                 marginTop: 14,
                 minHeight: 80,
                 borderWidth: 1.5,
-                borderColor: "#E2EAE5",
+                borderColor: colors.border,
                 borderRadius: 12,
                 padding: 12,
-                color: "#0D1F15",
+                color: colors.text,
                 textAlignVertical: "top",
               }}
             />
@@ -378,9 +379,9 @@ export default function AdminGroundsScreen() {
             >
               <TouchableOpacity
                 onPress={() => setRejecting(null)}
-                style={{ ...actionBtn, backgroundColor: "#F3F5F2" }}
+                style={{ ...actionBtn, backgroundColor: colors.bg }}
               >
-                <Text style={{ color: "#5A7264", fontWeight: "700", fontSize: 13 }}>
+                <Text style={{ color: colors.textSecondary, fontWeight: "700", fontSize: 13 }}>
                   Cancel
                 </Text>
               </TouchableOpacity>
@@ -389,14 +390,14 @@ export default function AdminGroundsScreen() {
                 disabled={busy || !rejectReason.trim()}
                 style={{
                   ...actionBtn,
-                  backgroundColor: "#E34C3C",
+                  backgroundColor: colors.dangerFill,
                   opacity: rejectReason.trim() ? 1 : 0.5,
                 }}
               >
                 {busy ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={colors.white} size="small" />
                 ) : (
-                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 13 }}>
+                  <Text style={{ color: colors.white, fontWeight: "700", fontSize: 13 }}>
                     Reject
                   </Text>
                 )}

@@ -1,5 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 interface StatTileProps {
   label: string;
@@ -10,7 +12,7 @@ interface StatTileProps {
 
 export function StatTile({ label, value, accent = "default" }: StatTileProps) {
   const valueColor =
-    accent === "amber" ? "#B8860B" : accent === "red" ? "#E34C3C" : "#0D1F15";
+    accent === "amber" ? colors.amber : accent === "red" ? colors.danger : colors.text;
   return (
     <View style={styles.tile}>
       <Text style={[styles.value, { color: valueColor }]} numberOfLines={1}>
@@ -27,7 +29,7 @@ const styles = StyleSheet.create({
   tile: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 14,
   },
@@ -36,7 +38,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   label: {
-    color: "#5A7264",
+    color: colors.textSecondary,
     fontSize: 11,
     marginTop: 4,
   },

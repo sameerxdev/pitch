@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { BookingStatusBadge } from "@/components/ui/Badge";
 import { formatPKR, formatSlotRange } from "@/utils/format";
 import type { Booking } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
 
 interface BookingRowProps {
   booking: Booking;
@@ -16,7 +17,7 @@ export function BookingRow({ booking, groundId }: BookingRowProps) {
   return (
     <TouchableOpacity
       onPress={() => router.push(`/(manager)/booking/${booking.id}` as never)}
-      className="bg-white rounded-xl p-4 mb-2 shadow-sm"
+      className="bg-pitch-card rounded-xl p-4 mb-2 shadow-sm"
       accessibilityRole="button"
       accessibilityLabel={`Booking ${formatSlotRange(booking.start_hour, booking.end_hour)}, ${booking.player_name ?? "Player"}, ${booking.player_phone ?? ""}`}
     >

@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
+  StyleSheet,
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -13,7 +12,13 @@ import { BookingStatusBadge } from "@/components/ui/Badge";
 import { useBookings, useCancelBooking } from "@/hooks/useBookings";
 import { getApiErrorMessage } from "@/api/client";
 import { formatDate, formatSlotRange, formatPKR } from "@/utils/format";
+import { format, isValid, parseISO } from "date-fns";
+import { PressableScale } from "@/components/ui/PressableScale";
+import { BookingCardSkeleton } from "@/components/ui/Skeleton";
 import type { Booking } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
+import { Icon, IconBadge } from "@/components/ui/Icon";
+import { colors, fonts } from "@/constants/colors";
 
 type TabKey = "upcoming" | "past" | "cancelled";
 
@@ -68,10 +73,10 @@ export default function PlayerBookingsScreen() {
   return (
     <SafeAreaView
       edges={["top"]}
-      style={{ flex: 1, backgroundColor: "#F3F5F2" }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
     >
       <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#0D1F15" }}>
+        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text }}>
           My Bookings
         </Text>
 
@@ -80,9 +85,9 @@ export default function PlayerBookingsScreen() {
           style={{
             flexDirection: "row",
             marginTop: 16,
-            backgroundColor: "#E2EAE5",
-            borderRadius: 12,
-            padding: 3,
+            backgroundColor: colors.surface,
+            borderRadius: 14,
+            padding: 4,
           }}
         >
           {TABS.map((tab) => (
@@ -94,14 +99,14 @@ export default function PlayerBookingsScreen() {
                 paddingVertical: 8,
                 borderRadius: 10,
                 alignItems: "center",
-                backgroundColor: activeTab === tab.key ? "#FFFFFF" : "transparent",
+                backgroundColor: activeTab === tab.key ? colors.accent : "transparent",
               }}
             >
               <Text
                 style={{
                   fontWeight: "700",
                   fontSize: 13,
-                  color: activeTab === tab.key ? "#0D1F15" : "#5A7264",
+                  color: activeTab === tab.key ? colors.onAccent : colors.textSecondary,
                 }}
               >
                 {tab.label}
@@ -113,86 +118,132 @@ export default function PlayerBookingsScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {isLoading && bookings.length === 0 ? (
-          <View style={{ alignItems: "center", paddingTop: 48 }}>
-            <ActivityIndicator size="large" color="#1A5C38" />
-          </View>
+          <>
+            <BookingCardSkeleton />
+            <BookingCardSkeleton />
+          </>
         ) : bookings.length === 0 ? (
           <View style={{ alignItems: "center", paddingTop: 48 }}>
-            <Text style={{ fontSize: 36 }}>📋</Text>
-            <Text style={{ color: "#5A7264", textAlign: "center", marginTop: 12 }}>
+            <IconBadge name="clipboard" size={32} />
+            <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 16 }}>
               No {activeTab} bookings yet.
             </Text>
           </View>
         ) : (
           bookings.map((item) => (
-            <TouchableOpacity
+            <PressableScale
               key={item.id}
               onPress={() =>
                 router.push(`/(player)/booking/${item.id}/confirmed` as never)
               }
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 16,
-                padding: 16,
-                marginBottom: 12,
-                shadowOpacity: 0.05,
-                shadowRadius: 8,
-              }}
+              style={styles.card}
             >
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                <Text style={{ fontWeight: "700", color: "#0D1F15", flex: 1 }} numberOfLines={1}>
-                  {item.ground_name}
-                </Text>
-                <BookingStatusBadge status={item.status} />
-              </View>
-
-              <Text style={{ color: "#5A7264", fontSize: 13 }}>
-                {formatDate(item.slot_date)} · {formatSlotRange(item.start_hour, item.end_hour)}
-              </Text>
-
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
-                <Text style={{ color: "#5A7264", fontSize: 12 }}>
-                  Advance:{" "}
-                  <Text style={{ color: "#0D1F15", fontWeight: "600" }}>
-                    {formatPKR(item.advance_amount)}
+              <View style={{ flexDirection: "row", gap: 14 }}>
+                <DateTile date={item.slot_date} />
+                <View style={{ flex: 1 }}>
+                  <View style={styles.cardTop}>
+                    <Text style={styles.ground} numberOfLines={1}>
+                      {item.ground_name}
+                    </Text>
+                    <BookingStatusBadge status={item.status} />
+                  </View>
+                  <Text style={styles.time}>
+                    <Icon name="clock" size={12} /> {formatSlotRange(item.start_hour, item.end_hour)}
                   </Text>
-                </Text>
-
-                {(item.status === "confirmed" || item.status === "arrived") && (
-                  <TouchableOpacity
-                    onPress={() => router.push(`/(player)/booking/${item.id}/qr` as never)}
-                  >
-                    <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 13 }}>
-                      Show QR
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {item.status === "completed" && !item.review_submitted && (
-                  <TouchableOpacity
-                    onPress={() => router.push(`/(player)/booking/${item.id}/review` as never)}
-                  >
-                    <Text style={{ color: "#F5A623", fontWeight: "700", fontSize: 13 }}>
-                      Leave review
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {canCancel(item.status) && (
-                  <TouchableOpacity
-                    onPress={() => handleCancel(item)}
-                    disabled={cancelBooking.isPending}
-                  >
-                    <Text style={{ color: "#E34C3C", fontWeight: "700", fontSize: 13 }}>
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                  <Text style={styles.advance}>
+                    Advance{" "}
+                    <Text style={{ fontWeight: "700" }}>{formatPKR(item.advance_amount)}</Text>
+                  </Text>
+                </View>
               </View>
-            </TouchableOpacity>
+
+              {(item.status === "confirmed" ||
+                item.status === "arrived" ||
+                canCancel(item.status) ||
+                (item.status === "completed" && !item.review_submitted)) && (
+                <View style={styles.actions}>
+                  {(item.status === "confirmed" || item.status === "arrived") && (
+                    <TouchableOpacity
+                      style={styles.action}
+                      onPress={() => router.push(`/(player)/booking/${item.id}/qr` as never)}
+                    >
+                      <Icon name="qr" size={15} color={colors.accent} />
+                      <Text style={[styles.actionText, { color: colors.accent }]}>Show pass</Text>
+                    </TouchableOpacity>
+                  )}
+                  {item.status === "completed" && !item.review_submitted && (
+                    <TouchableOpacity
+                      style={styles.action}
+                      onPress={() => router.push(`/(player)/booking/${item.id}/review` as never)}
+                    >
+                      <Icon name="star" size={15} color={colors.amber} />
+                      <Text style={[styles.actionText, { color: colors.accent }]}>Leave review</Text>
+                    </TouchableOpacity>
+                  )}
+                  {canCancel(item.status) && (
+                    <TouchableOpacity
+                      style={styles.action}
+                      onPress={() => handleCancel(item)}
+                      disabled={cancelBooking.isPending}
+                    >
+                      <Text style={[styles.actionText, { color: colors.danger }]}>Cancel</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </PressableScale>
           ))
         )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+function DateTile({ date }: { date: string }) {
+  const d = parseISO(date);
+  const ok = isValid(d);
+  return (
+    <View style={styles.dateTile}>
+      <Text style={styles.dateDay}>{ok ? format(d, "dd") : "--"}</Text>
+      <Text style={styles.dateMonth}>{ok ? format(d, "MMM").toUpperCase() : ""}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    padding: 14,
+    marginBottom: 12,
+  },
+  cardTop: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 5 },
+  ground: { flex: 1, fontSize: 15, fontWeight: "800" },
+  time: { fontSize: 13, color: colors.textSecondary },
+  advance: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+  dateTile: {
+    width: 58,
+    height: 66,
+    borderRadius: 14,
+    backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.accentBorder,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dateDay: { fontFamily: fonts.display, fontSize: 28, lineHeight: 30, color: colors.accent },
+  dateMonth: { fontSize: 10, fontWeight: "800", letterSpacing: 1, color: colors.accentLight },
+  actions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 18,
+    marginTop: 12,
+    paddingTop: 11,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  action: { flexDirection: "row", alignItems: "center", gap: 5 },
+  actionText: { fontSize: 13, fontWeight: "700" },
+});

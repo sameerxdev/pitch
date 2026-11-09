@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -18,6 +17,9 @@ import { useGround, useGroundSlots } from "@/hooks/useGrounds";
 import { formatSlotRange } from "@/utils/format";
 import { getPlayerBookableDates } from "@/utils/playerBookableDates";
 import type { Slot } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function SlotCalendarScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -80,8 +82,8 @@ export default function SlotCalendarScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#F3F5F2" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: colors.bg }}>
         <View
           style={{
             flexDirection: "row",
@@ -96,17 +98,17 @@ export default function SlotCalendarScreen() {
             }}
             style={{ marginRight: 12 }}
           >
-            <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-              ←
+            <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+              <Icon name="back" size={20} />
             </Text>
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 18, fontWeight: "800", color: "#0D1F15" }}>
+            <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>
               Select a Slot
             </Text>
             {ground?.name ? (
               <Text
-                style={{ color: "#5A7264", fontSize: 12, marginTop: 2 }}
+                style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}
                 numberOfLines={1}
               >
                 {ground.name}
@@ -122,7 +124,7 @@ export default function SlotCalendarScreen() {
       >
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 14,
             paddingVertical: 10,
             paddingHorizontal: 12,
@@ -141,12 +143,12 @@ export default function SlotCalendarScreen() {
           />
         </View>
 
-        <Text style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}>
+        <Text style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}>
           Available Slots — {format(selectedDate, "dd MMM")}
         </Text>
 
         {slotsLoading ? (
-          <ActivityIndicator color="#1A5C38" style={{ marginVertical: 24 }} />
+          <ActivityIndicator color={colors.brand} style={{ marginVertical: 24 }} />
         ) : (
           <SlotGrid
             slots={bookableSlots}
@@ -156,7 +158,7 @@ export default function SlotCalendarScreen() {
         )}
 
         {error ? (
-          <Text style={{ color: "#E34C3C", fontSize: 13, marginTop: 12 }}>
+          <Text style={{ color: colors.danger, fontSize: 13, marginTop: 12 }}>
             {error}
           </Text>
         ) : null}
@@ -171,16 +173,16 @@ export default function SlotCalendarScreen() {
           left: 0,
           right: 0,
           padding: 16,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#E2EAE5",
+          borderTopColor: colors.border,
         }}
       >
         <TouchableOpacity
           onPress={handleContinue}
           disabled={!selectedSlot || submitting}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.accent,
             borderRadius: 14,
             paddingVertical: 16,
             alignItems: "center",
@@ -188,11 +190,11 @@ export default function SlotCalendarScreen() {
           }}
         >
           {submitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
+            <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
               {selectedSlot
-                ? `Continue  ${formatSlotRange(selectedSlot.start_hour, selectedSlot.end_hour)} →`
+                ? `Continue  ${formatSlotRange(selectedSlot.start_hour, selectedSlot.end_hour)}`
                 : "Select a slot to continue"}
             </Text>
           )}

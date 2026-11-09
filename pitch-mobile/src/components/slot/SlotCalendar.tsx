@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import {
   startOfMonth,
   endOfMonth,
@@ -16,6 +16,9 @@ import {
   subDays,
   isWithinInterval,
 } from "date-fns";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 interface SlotCalendarProps {
   selectedDate: Date;
@@ -122,7 +125,7 @@ export function SlotCalendar({
           accessibilityLabel="Previous month"
           style={{ opacity: canPrev ? 1 : 0.35 }}
         >
-          <Text className={`text-pitch-text ${compact ? "text-lg" : "text-xl"}`}>‹</Text>
+          <Icon name="chevronLeft" size={compact ? 18 : 22} color={colors.text} />
         </TouchableOpacity>
         <Text
           className={`text-pitch-text font-bold ${compact ? "text-sm" : "text-base"}`}
@@ -136,7 +139,7 @@ export function SlotCalendar({
           accessibilityLabel="Next month"
           style={{ opacity: canNext ? 1 : 0.35 }}
         >
-          <Text className={`text-pitch-text ${compact ? "text-lg" : "text-xl"}`}>›</Text>
+          <Icon name="chevronRight" size={compact ? 18 : 22} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -216,15 +219,15 @@ export function SlotCalendar({
                         justifyContent: "center",
                       },
                   selected
-                    ? { backgroundColor: "#1A5C38" }
+                    ? { backgroundColor: colors.accent }
                     : inRange
-                      ? { backgroundColor: "#E8F3EE" }
+                      ? { backgroundColor: colors.brandSoft }
                       : {},
                   !selected && todayDay && !inRange
-                    ? { borderWidth: 1, borderColor: "#1A5C38" }
+                    ? { borderWidth: 1, borderColor: colors.accent }
                     : {},
                   isRangeEnd && !selected
-                    ? { borderWidth: 1.5, borderColor: "#1A5C38" }
+                    ? { borderWidth: 1.5, borderColor: colors.brand }
                     : {},
                 ]}
               >
@@ -233,19 +236,19 @@ export function SlotCalendar({
                     fontSize: compact ? 12 : 14,
                     fontWeight: "600",
                     color: selected
-                      ? "#FFFFFF"
+                      ? colors.onAccent
                       : disabled
-                        ? "#A0B4A8"
+                        ? colors.textMuted
                         : inRange
-                          ? "#1A5C38"
-                          : "#0D1F15",
+                          ? colors.brand
+                          : colors.text,
                   }}
                 >
                   {format(day, "d")}
                 </Text>
               </TouchableOpacity>
               {hasDot && !selected && (
-                <View className="w-1 h-1 rounded-full bg-green mt-0.5" />
+                <View className="w-1 h-1 rounded-full bg-accent mt-0.5" />
               )}
             </View>
           );

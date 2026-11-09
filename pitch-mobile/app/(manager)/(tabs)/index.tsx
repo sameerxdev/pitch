@@ -1,7 +1,6 @@
 import React from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -16,6 +15,9 @@ import {
 } from "@/hooks/useManagerBookings";
 import { SlotGrid } from "@/components/slot/SlotGrid";
 import { BookingRow } from "@/components/manager/BookingRow";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function ManagerHomeScreen() {
   const router = useRouter();
@@ -43,7 +45,7 @@ export default function ManagerHomeScreen() {
   return (
     <SafeAreaView
       edges={["top"]}
-      style={{ flex: 1, backgroundColor: "#F3F5F2" }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
     >
       {/* Top bar */}
       <View
@@ -61,8 +63,8 @@ export default function ManagerHomeScreen() {
           }}
         >
           <View style={{ flex: 1 }}>
-            <Text style={{ color: "#5A7264", fontSize: 12 }}>Managing</Text>
-            <Text style={{ color: "#0D1F15", fontSize: 18, fontWeight: "800" }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Managing</Text>
+            <Text style={{ color: colors.text, fontSize: 18, fontWeight: "800" }}>
               {activeGround.name}
             </Text>
           </View>
@@ -70,14 +72,14 @@ export default function ManagerHomeScreen() {
             <TouchableOpacity
               onPress={() => router.push("/(manager)/scan" as never)}
               style={{
-                backgroundColor: "#1A5C38",
+                backgroundColor: colors.primary,
                 borderRadius: 10,
                 paddingHorizontal: 12,
                 paddingVertical: 6,
               }}
             >
               <Text
-                style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 13 }}
+                style={{ color: colors.white, fontWeight: "600", fontSize: 13 }}
               >
                 Scan QR
               </Text>
@@ -89,16 +91,16 @@ export default function ManagerHomeScreen() {
                   router.replace("/(manager)/ground-select" as never);
                 }}
                 style={{
-                  backgroundColor: "#E8F3EE",
+                  backgroundColor: colors.brandSoft,
                   borderRadius: 10,
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                 }}
               >
                 <Text
-                  style={{ color: "#1A5C38", fontWeight: "600", fontSize: 13 }}
+                  style={{ color: colors.brand, fontWeight: "600", fontSize: 13 }}
                 >
-                  Switch ↔
+                  Switch <Icon name="swap" size={13} />
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -108,26 +110,26 @@ export default function ManagerHomeScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {/* Today's date */}
-        <Text style={{ color: "#5A7264", fontSize: 13, marginBottom: 16 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
           Today — {format(new Date(), "dd MMM yyyy")}
         </Text>
 
         {/* Slot overview */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 16,
             marginBottom: 20,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}
           >
             Today's Slots
           </Text>
           {slotsLoading ? (
-            <ActivityIndicator color="#1A5C38" />
+            <ActivityIndicator color={colors.brand} />
           ) : (
             <SlotGrid
               slots={slots}
@@ -147,16 +149,16 @@ export default function ManagerHomeScreen() {
               marginBottom: 12,
             }}
           >
-            <Text style={{ fontWeight: "700", color: "#0D1F15" }}>
+            <Text style={{ fontWeight: "700", color: colors.text }}>
               Upcoming Bookings
             </Text>
             <TouchableOpacity
               onPress={() => router.push("/(manager)/(tabs)/bookings" as never)}
             >
               <Text
-                style={{ color: "#1A5C38", fontWeight: "600", fontSize: 13 }}
+                style={{ color: colors.brand, fontWeight: "600", fontSize: 13 }}
               >
-                See all →
+                See all <Icon name="forward" size={15} />
               </Text>
             </TouchableOpacity>
           </View>
@@ -167,7 +169,7 @@ export default function ManagerHomeScreen() {
           ) : (
             <Text
               style={{
-                color: "#5A7264",
+                color: colors.textSecondary,
                 textAlign: "center",
                 paddingVertical: 16,
               }}

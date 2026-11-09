@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { formatPKR } from "@/utils/format";
+import { Text } from "@/components/ui/Typography";
 
 interface PriceBreakdownProps {
   totalPrice: number;
@@ -16,7 +17,7 @@ export function PriceBreakdown({
   const remainder = totalPrice - advanceAmount;
 
   return (
-    <View className="bg-white rounded-2xl p-4 shadow-sm">
+    <View className="bg-pitch-card rounded-2xl p-4 shadow-sm">
       <Text className="text-pitch-text font-bold text-sm mb-3">
         Price Breakdown
       </Text>
@@ -56,7 +57,7 @@ function Row({
       <Text
         className={`text-sm font-bold ${
           highlight
-            ? "text-green"
+            ? "text-brand"
             : muted
               ? "text-pitch-secondary"
               : "text-pitch-text"

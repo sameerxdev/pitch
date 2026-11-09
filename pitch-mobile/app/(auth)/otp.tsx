@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
-  Text,
-  TextInput,
+  type TextInputInstance,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +15,9 @@ import { requestOtp, verifyOtp } from "@/api/auth";
 import { getApiErrorMessage } from "@/api/client";
 import { useAuthStore } from "@/stores/authStore";
 import { Config } from "@/constants/config";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 const NUM_DIGITS = 6;
 
@@ -32,7 +34,7 @@ export default function OtpScreen() {
     Config.OTP_RESEND_COOLDOWN_SECONDS,
   );
 
-  const inputRefs = useRef<Array<TextInput | null>>(
+  const inputRefs = useRef<Array<TextInputInstance | null>>(
     Array(NUM_DIGITS).fill(null),
   );
   const shake = useRef(new Animated.Value(0)).current;
@@ -135,7 +137,7 @@ export default function OtpScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -149,8 +151,8 @@ export default function OtpScreen() {
             disabled={verifying}
             style={{ marginBottom: 24 }}
           >
-            <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-              ← Back
+            <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+              <Icon name="back" size={20} />{" "}Back
             </Text>
           </TouchableOpacity>
 
@@ -158,15 +160,15 @@ export default function OtpScreen() {
             style={{
               fontSize: 26,
               fontWeight: "800",
-              color: "#0D1F15",
+              color: colors.text,
               marginBottom: 8,
             }}
           >
             Verify your number
           </Text>
-          <Text style={{ color: "#5A7264", fontSize: 14, marginBottom: 24 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 24 }}>
             We sent a 6-digit code to{" "}
-            <Text style={{ fontWeight: "700", color: "#0D1F15" }}>{phone}</Text>
+            <Text style={{ fontWeight: "700", color: colors.text }}>{phone}</Text>
           </Text>
 
           <Animated.View
@@ -200,23 +202,23 @@ export default function OtpScreen() {
                   height: 56,
                   borderWidth: 2,
                   borderColor: error
-                    ? "#E34C3C"
+                    ? colors.danger
                     : digit
-                      ? "#1A5C38"
-                      : "#E2EAE5",
+                      ? colors.brand
+                      : colors.border,
                   borderRadius: 12,
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: colors.surface,
                   textAlign: "center",
                   fontSize: 22,
                   fontWeight: "700",
-                  color: "#0D1F15",
+                  color: colors.text,
                 }}
               />
             ))}
           </Animated.View>
 
           {error ? (
-            <Text style={{ color: "#E34C3C", fontSize: 13, marginBottom: 12 }}>
+            <Text style={{ color: colors.danger, fontSize: 13, marginBottom: 12 }}>
               {error}
             </Text>
           ) : null}
@@ -225,7 +227,7 @@ export default function OtpScreen() {
             onPress={() => handleVerify()}
             disabled={digits.some((d) => !d) || verifying}
             style={{
-              backgroundColor: "#1A5C38",
+              backgroundColor: colors.accent,
               borderRadius: 14,
               paddingVertical: 16,
               alignItems: "center",
@@ -233,9 +235,9 @@ export default function OtpScreen() {
             }}
           >
             {verifying ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.onAccent} />
             ) : (
-              <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
+              <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
                 Verify & Continue
               </Text>
             )}
@@ -248,7 +250,7 @@ export default function OtpScreen() {
           >
             <Text
               style={{
-                color: resendSeconds > 0 ? "#A0B4A8" : "#1A5C38",
+                color: resendSeconds > 0 ? colors.textMuted : colors.brand,
                 fontSize: 14,
                 fontWeight: "600",
               }}

@@ -1,5 +1,8 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 import { SlotCell } from "./SlotCell";
 import type { Slot } from "@/api/types";
 
@@ -11,11 +14,7 @@ interface SlotGridProps {
 
 const COLS = 3;
 
-export function SlotGrid({
-  slots,
-  selectedSlotId,
-  onSelectSlot,
-}: SlotGridProps) {
+export function SlotGrid({ slots, selectedSlotId, onSelectSlot }: SlotGridProps) {
   if (!slots.length) {
     return (
       <View className="py-12 items-center">
@@ -27,30 +26,37 @@ export function SlotGrid({
   }
 
   const sorted = [...slots].sort((a, b) => a.start_hour - b.start_hour);
-  const rows: Slot[][] = [];
-  for (let i = 0; i < sorted.length; i += COLS) {
-    rows.push(sorted.slice(i, i + COLS));
-  }
+  const sections: Array<{ title: string; icon: IconName; items: Slot[] }> = [
+    { title: "Day", icon: "sun", items: sorted.filter((s) => s.rate_type === "day") },
+    { title: "Night", icon: "moon", items: sorted.filter((s) => s.rate_type !== "day") },
+  ];
 
   return (
-    <View className="gap-5">
-      {rows.map((row, rowIdx) => (
-        <View key={rowIdx} className="flex-row gap-4">
-          {row.map((slot) => (
-            <View key={slot.id} className="flex-1">
-              <SlotCell
-                slot={slot}
-                isSelected={slot.id === selectedSlotId}
-                onPress={() => onSelectSlot(slot)}
-              />
+    <View className="gap-6">
+      {sections
+        .filter((section) => section.items.length > 0)
+        .map((section) => (
+          <View key={section.title} className="gap-3">
+            <View className="flex-row items-center gap-2">
+              <Icon name={section.icon} size={16} color={colors.accent} />
+              <Text style={{ fontSize: 15, fontWeight: "800" }}>{section.title}</Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>
+                {section.items.length} {section.items.length === 1 ? "slot" : "slots"}
+              </Text>
             </View>
-          ))}
-          {row.length < COLS &&
-            Array.from({ length: COLS - row.length }).map((_, idx) => (
-              <View key={`empty-${idx}`} className="flex-1" />
-            ))}
-        </View>
-      ))}
+            <View className="flex-row flex-wrap" style={{ marginHorizontal: -5 }}>
+              {section.items.map((slot) => (
+                <View key={slot.id} style={{ width: `${100 / COLS}%`, padding: 5 }}>
+                  <SlotCell
+                    slot={slot}
+                    isSelected={slot.id === selectedSlotId}
+                    onPress={() => onSelectSlot(slot)}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
     </View>
   );
 }

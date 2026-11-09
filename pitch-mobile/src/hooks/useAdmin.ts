@@ -1,4 +1,6 @@
+import type { AnalyticsRange } from "@/api/types";
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -27,10 +29,11 @@ function invalidateAdmin(queryClient: QueryClient, key: string) {
   ]);
 }
 
-export function usePlatformAnalytics(period: "today" | "week" | "month") {
+export function usePlatformAnalytics(period: AnalyticsRange, anchor: string) {
   return useQuery({
-    queryKey: ["admin-analytics", period],
-    queryFn: () => getPlatformAnalytics(period),
+    queryKey: ["admin-analytics", period, anchor],
+    queryFn: () => getPlatformAnalytics(period, anchor),
+    placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
 }

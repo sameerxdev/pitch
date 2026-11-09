@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Animated } from "react-native";
+import { View, Animated } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { differenceInSeconds } from "date-fns";
 import { formatCountdown } from "@/utils/format";
 import { Config } from "@/constants/config";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -59,7 +61,7 @@ export function HoldTimer({ expiresAt, onExpired }: HoldTimerProps) {
           cx={SIZE / 2}
           cy={SIZE / 2}
           r={RADIUS}
-          stroke="#E2EAE5"
+          stroke={colors.border}
           strokeWidth={STROKE_WIDTH}
           fill="none"
         />
@@ -67,7 +69,7 @@ export function HoldTimer({ expiresAt, onExpired }: HoldTimerProps) {
           cx={SIZE / 2}
           cy={SIZE / 2}
           r={RADIUS}
-          stroke={isUrgent ? "#E34C3C" : "#F5A623"}
+          stroke={isUrgent ? colors.danger : colors.amber}
           strokeWidth={STROKE_WIDTH}
           fill="none"
           strokeDasharray={CIRCUMFERENCE}
@@ -82,7 +84,7 @@ export function HoldTimer({ expiresAt, onExpired }: HoldTimerProps) {
         style={{ width: SIZE, height: SIZE }}
       >
         <Text
-          className={`font-bold text-lg ${isUrgent ? "text-red" : "text-amber"}`}
+          className={`font-bold text-lg ${isUrgent ? "text-red-soft" : "text-amber"}`}
         >
           {formatCountdown(remaining)}
         </Text>

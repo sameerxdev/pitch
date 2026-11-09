@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -14,6 +13,9 @@ import { useManagerStore } from "@/stores/managerStore";
 import { useManagerBookings } from "@/hooks/useManagerBookings";
 import { BookingRow } from "@/components/manager/BookingRow";
 import { SlotCalendar } from "@/components/slot/SlotCalendar";
+import { Text } from "@/components/ui/Typography";
+import { IconBadge } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 const STATUS_FILTERS = [
   { key: "all", label: "All" },
   { key: "confirmed", label: "Confirmed" },
@@ -41,19 +43,19 @@ function ManagerBookingsHeader({
         style={{
           fontSize: 24,
           fontWeight: "800",
-          color: "#0D1F15",
+          color: colors.text,
           marginBottom: 2,
         }}
       >
         Bookings
       </Text>
-      <Text style={{ color: "#5A7264", fontSize: 13, marginBottom: 12 }}>
+      <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 12 }}>
         {groundName}
       </Text>
 
       <View
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderRadius: 14,
           paddingVertical: 10,
           paddingHorizontal: 12,
@@ -70,7 +72,7 @@ function ManagerBookingsHeader({
         />
       </View>
 
-      <Text style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}>
+      <Text style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}>
         {format(selectedDate, "dd MMM yyyy")}
       </Text>
 
@@ -87,14 +89,14 @@ function ManagerBookingsHeader({
               paddingHorizontal: 14,
               paddingVertical: 6,
               borderRadius: 20,
-              backgroundColor: statusFilter === f.key ? "#1A5C38" : "#FFFFFF",
+              backgroundColor: statusFilter === f.key ? colors.primary : colors.surface,
               borderWidth: 1.5,
-              borderColor: statusFilter === f.key ? "#1A5C38" : "#E2EAE5",
+              borderColor: statusFilter === f.key ? colors.brand : colors.border,
             }}
           >
             <Text
               style={{
-                color: statusFilter === f.key ? "#FFFFFF" : "#5A7264",
+                color: statusFilter === f.key ? colors.white : colors.textSecondary,
                 fontWeight: "600",
                 fontSize: 12,
               }}
@@ -138,7 +140,7 @@ export default function ManagerBookingsScreen() {
   return (
     <SafeAreaView
       edges={["top"]}
-      style={{ flex: 1, backgroundColor: "#F3F5F2" }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
     >
       <ManagerBookingsHeader
         groundName={activeGround.name}
@@ -152,7 +154,7 @@ export default function ManagerBookingsScreen() {
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
-          <ActivityIndicator size="large" color="#1A5C38" />
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : isError ? (
         <View
@@ -163,9 +165,9 @@ export default function ManagerBookingsScreen() {
             padding: 24,
           }}
         >
-          <Text style={{ color: "#E34C3C" }}>Could not load bookings.</Text>
+          <Text style={{ color: colors.danger }}>Could not load bookings.</Text>
           <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
-            <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
+            <Text style={{ color: colors.brand, fontWeight: "700" }}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -175,7 +177,7 @@ export default function ManagerBookingsScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
           refreshControl={
-            <RefreshControl refreshing={false} onRefresh={() => refetch()} />
+            <RefreshControl refreshing={false} onRefresh={() => void refetch()} />
           }
           onEndReached={() => hasNextPage && fetchNextPage()}
           onEndReachedThreshold={0.5}
@@ -184,9 +186,9 @@ export default function ManagerBookingsScreen() {
           )}
           ListEmptyComponent={
             <View style={{ alignItems: "center", paddingTop: 24 }}>
-              <Text style={{ fontSize: 32 }}>📋</Text>
+              <IconBadge name="clipboard" size={32} />
               <Text
-                style={{ color: "#5A7264", textAlign: "center", marginTop: 12 }}
+                style={{ color: colors.textSecondary, textAlign: "center", marginTop: 12 }}
               >
                 No bookings for this date.
               </Text>
@@ -195,7 +197,7 @@ export default function ManagerBookingsScreen() {
           ListFooterComponent={
             isFetchingNextPage ? (
               <ActivityIndicator
-                color="#1A5C38"
+                color={colors.brand}
                 style={{ paddingVertical: 16 }}
               />
             ) : null

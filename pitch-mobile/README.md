@@ -92,9 +92,18 @@ running its seeder (`docker compose exec api python -m app.seed`):
 | Role | Phone |
 |------|-------|
 | Admin | `+923000000001` |
-| Ground owner | `+923000000002` |
-| Manager | `+923000000003` |
-| Player | `+923000000005` |
+| Ground owner (Lahore) | `+923000000002` |
+| Ground owner (Karachi) | `+923000000008` |
+| Ground owner (Islamabad/Rawalpindi) | `+923000000009` |
+| Manager (Lahore, two grounds) | `+923000000003` |
+| Manager (Karachi) | `+923000000004` |
+| Manager (Islamabad) | `+923000000010` |
+| Manager (Rawalpindi) | `+923000000011` |
+| Player (Lahore) | `+923000000005`, `+923000000006` |
+| Player (Karachi) | `+923000000007` |
+| Player (Islamabad) | `+923000000012` |
+| Player (Rawalpindi) | `+923000000013` |
+| Suspended player | `+923000000014` |
 
 `PERSIST_AUTH_SESSION` is `false` in `src/constants/config.ts`, so the app opens at
 the phone-entry screen on each cold start. Set it to `true` for production.

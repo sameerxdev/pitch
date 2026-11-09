@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
@@ -13,6 +12,9 @@ import {
   DEFAULT_MAP_COORDINATE,
   type MapCoordinate,
 } from "@/constants/cityCoordinates";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 type Props = {
   city: string;
@@ -73,7 +75,7 @@ export function GroundLocationPicker({ city, value, onChange }: Props) {
           initialRegion={toRegion(center)}
           onPress={handleMapPress}
         >
-          {value && <Marker coordinate={value} pinColor="#1A5C38" />}
+          {value && <Marker coordinate={value} pinColor={colors.brand} />}
         </MapView>
       </View>
       <TouchableOpacity
@@ -82,9 +84,9 @@ export function GroundLocationPicker({ city, value, onChange }: Props) {
         style={styles.locBtn}
       >
         {locating ? (
-          <ActivityIndicator size="small" color="#1A5C38" />
+          <ActivityIndicator size="small" color={colors.brand} />
         ) : (
-          <Text style={styles.locBtnText}>📍 Use my current location</Text>
+          <Text style={styles.locBtnText}><Icon name="location" size={13} />{" "}Use my current location</Text>
         )}
       </TouchableOpacity>
       {value && (
@@ -98,7 +100,7 @@ export function GroundLocationPicker({ city, value, onChange }: Props) {
 
 const styles = StyleSheet.create({
   hint: {
-    color: "#5A7264",
+    color: colors.textSecondary,
     fontSize: 12,
     marginBottom: 10,
     lineHeight: 18,
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1.5,
-    borderColor: "#E2EAE5",
+    borderColor: colors.border,
   },
   map: { width: "100%", height: "100%" },
   locBtn: {
@@ -117,12 +119,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: "#E8F3EE",
+    backgroundColor: colors.brandSoft,
   },
-  locBtnText: { color: "#1A5C38", fontWeight: "600", fontSize: 13 },
+  locBtnText: { color: colors.brand, fontWeight: "600", fontSize: 13 },
   coords: {
     marginTop: 6,
-    color: "#A0B4A8",
+    color: colors.textMuted,
     fontSize: 11,
   },
 });

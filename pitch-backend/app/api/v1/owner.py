@@ -190,12 +190,15 @@ async def remove_manager(
 
 @router.get("/analytics")
 async def analytics(
-    period: str = Query(..., pattern="^(today|week|month)$"),
+    period: str = Query(..., pattern="^(day|today|week|month)$"),
+    anchor: Optional[str] = None,
     ground_id: Optional[str] = None,
     owner=Depends(require_owner),
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
-    return success(await owner_service.get_analytics(db, owner["_id"], period=period, ground_id=ground_id))
+    return success(
+        await owner_service.get_analytics(db, owner["_id"], period=period, anchor=anchor, ground_id=ground_id)
+    )
 
 
 # ---- Reviews ----------------------------------------------------------------

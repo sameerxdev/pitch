@@ -10,6 +10,7 @@ import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuthStore } from "@/stores/authStore";
 import type { UserRole } from "@/api/types";
+import { colors } from "@/constants/colors";
 
 const HOME_FOR_ROLE: Record<UserRole, string> = {
   player: "/(player)",
@@ -40,12 +41,12 @@ export function RoleGuard({
       <View
         style={{
           flex: 1,
-          backgroundColor: "#F3F5F2",
+          backgroundColor: colors.bg,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator size="large" color="#1A5C38" />
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }

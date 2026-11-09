@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   FlatList,
   Alert,
@@ -14,6 +13,9 @@ import { useManagerStore } from "@/stores/managerStore";
 import { useLogout } from "@/hooks/useAuth";
 import { getApiErrorMessage } from "@/api/client";
 import type { ManagerGround } from "@/api/types";
+import { LogoutButton } from "@/components/ui/LogoutButton";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 export default function GroundSelectScreen() {
   const router = useRouter();
@@ -72,19 +74,19 @@ export default function GroundSelectScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ padding: 24, flex: 1 }}>
         <Text
           style={{
             fontSize: 28,
             fontWeight: "800",
-            color: "#0D1F15",
+            color: colors.text,
             marginBottom: 8,
           }}
         >
           Select Ground
         </Text>
-        <Text style={{ color: "#5A7264", fontSize: 14, marginBottom: 24 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 24 }}>
           {grounds.length > 1
             ? "You manage multiple grounds. Choose which one to work on."
             : "Choose the ground you want to manage today."}
@@ -93,16 +95,16 @@ export default function GroundSelectScreen() {
         {isLoading ? (
           <ActivityIndicator
             size="large"
-            color="#1A5C38"
+            color={colors.brand}
             style={{ marginTop: 48 }}
           />
         ) : isError ? (
           <View style={{ alignItems: "center", marginTop: 32 }}>
-            <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+            <Text style={{ color: colors.danger, textAlign: "center" }}>
               {getApiErrorMessage(error)}
             </Text>
             <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 16 }}>
-              <Text style={{ color: "#1A5C38", fontWeight: "700" }}>
+              <Text style={{ color: colors.brand, fontWeight: "700" }}>
                 Try again
               </Text>
             </TouchableOpacity>
@@ -114,24 +116,9 @@ export default function GroundSelectScreen() {
             style={{ flex: 1 }}
             contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
             ListFooterComponent={
-              <TouchableOpacity
-                onPress={handleLogout}
-                accessibilityRole="button"
-                accessibilityLabel="Log out"
-                style={{
-                  marginTop: 8,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                  borderRadius: 14,
-                  backgroundColor: "#FDECEA",
-                }}
-              >
-                <Text
-                  style={{ color: "#E34C3C", fontWeight: "700", fontSize: 15 }}
-                >
-                  Log out
-                </Text>
-              </TouchableOpacity>
+              <View style={{ marginTop: 8 }}>
+                <LogoutButton fullWidth onPress={handleLogout} loading={logoutMutation.isPending} />
+              </View>
             }
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -139,7 +126,7 @@ export default function GroundSelectScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Select ${item.name}`}
                 style={{
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: colors.surface,
                   borderRadius: 16,
                   padding: 20,
                   marginBottom: 12,
@@ -149,18 +136,18 @@ export default function GroundSelectScreen() {
               >
                 <View style={{ flex: 1 }}>
                   <Text
-                    style={{ fontWeight: "700", color: "#0D1F15", fontSize: 16 }}
+                    style={{ fontWeight: "700", color: colors.text, fontSize: 16 }}
                   >
                     {item.name}
                   </Text>
                   <Text
-                    style={{ color: "#5A7264", fontSize: 13, marginTop: 2 }}
+                    style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}
                   >
                     {item.area}, {item.city}
                   </Text>
                   <Text
                     style={{
-                      color: "#1A5C38",
+                      color: colors.brand,
                       fontWeight: "600",
                       fontSize: 12,
                       marginTop: 4,
@@ -170,12 +157,12 @@ export default function GroundSelectScreen() {
                     {item.today_booking_count !== 1 ? "s" : ""} today
                   </Text>
                 </View>
-                <Text style={{ color: "#1A5C38", fontSize: 22 }}>›</Text>
+                <Text style={{ color: colors.brand, fontSize: 22 }}>›</Text>
               </TouchableOpacity>
             )}
             ListEmptyComponent={
               <Text
-                style={{ color: "#5A7264", textAlign: "center", marginTop: 32 }}
+                style={{ color: colors.textSecondary, textAlign: "center", marginTop: 32 }}
               >
                 No grounds assigned to you. Ask the ground owner to assign you.
               </Text>

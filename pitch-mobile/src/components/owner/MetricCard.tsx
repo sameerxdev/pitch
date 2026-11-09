@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { formatTrend } from "@/utils/format";
+import { View, StyleSheet } from "react-native";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 interface MetricCardProps {
   label: string;
@@ -33,7 +34,7 @@ export function MetricCard({ label, value, trendPercent }: MetricCardProps) {
           numberOfLines={1}
         >
           {isNeutral ? "" : isPositive ? "↑ " : "↓ "}
-          {formatTrend(Math.abs(trendPercent))}
+          {Math.abs(trendPercent).toFixed(1)}%
         </Text>
       </View>
     </View>
@@ -44,17 +45,17 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 12,
   },
   label: {
-    color: "#5A7264",
+    color: colors.textSecondary,
     fontSize: 11,
     marginBottom: 4,
   },
   value: {
-    color: "#0D1F15",
+    color: colors.text,
     fontWeight: "800",
     fontSize: 15,
   },
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
   },
-  trendNeutral: { color: "#5A7264" },
-  trendUp: { color: "#1A5C38" },
-  trendDown: { color: "#E34C3C" },
+  trendNeutral: { color: colors.textSecondary },
+  trendUp: { color: colors.brand },
+  trendDown: { color: colors.danger },
 });

@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
   Animated,
   PanResponder,
   ScrollView,
+  type ScrollViewInstance,
 } from "react-native";
 import {
   SafeAreaView,
@@ -15,22 +15,34 @@ import {
 } from "react-native-safe-area-context";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useRouter } from "expo-router";
+import { coordinateForCity } from "@/constants/cityCoordinates";
 import { useGrounds } from "@/hooks/useGrounds";
+import { useAuthStore } from "@/stores/authStore";
 import { formatPKR } from "@/utils/format";
 import type { Ground } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors, fonts } from "@/constants/colors";
 
 const { height: SCREEN_H } = Dimensions.get("window");
-const HANDLE_HEIGHT = 26;
+const HANDLE_HEIGHT = 68;
 const HALF_HEIGHT = Math.round(SCREEN_H / 2);
 const COLLAPSED_Y = HALF_HEIGHT - HANDLE_HEIGHT;
 const EXPANDED_Y = 0;
 
-const LAHORE: Region = {
-  latitude: 31.4697,
-  longitude: 74.2728,
-  latitudeDelta: 0.28,
-  longitudeDelta: 0.28,
-};
+const CITY_MAP_DELTA = 0.28;
+
+function regionForCity(city: string | null | undefined): Region {
+  const { latitude, longitude } = coordinateForCity(city ?? "");
+  return {
+    // The sheet covers the bottom half, so move the camera south to keep the
+    // city center in the visible top half of the map.
+    latitude: latitude - CITY_MAP_DELTA / 4,
+    longitude,
+    latitudeDelta: CITY_MAP_DELTA,
+    longitudeDelta: CITY_MAP_DELTA,
+  };
+}
 
 /** Zoom when focusing a ground — wider = more zoomed out. */
 const FOCUS_LAT_DELTA = 0.14;
@@ -42,11 +54,13 @@ export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const mapRef = useRef<MapView | null>(null);
   const hasFittedMap = useRef(false);
 
-  const { data } = useGrounds();
+  const city = useAuthStore((s) => s.user?.city);
+  const initialRegion = useMemo(() => regionForCity(city), [city]);
+  const { data } = useGrounds(city ? { city } : {});
   const grounds = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
     [data],
@@ -56,7 +70,8 @@ export default function ExploreScreen() {
   const lastY = useRef(COLLAPSED_Y);
 
   useEffect(() => {
-    if (grounds.length === 0 || hasFittedMap.current) return;
+    // Fitting a single pin zooms in to street level; stay on the city view.
+    if (grounds.length < 2 || hasFittedMap.current) return;
     hasFittedMap.current = true;
     mapRef.current?.fitToCoordinates(
       grounds.map((g) => ({
@@ -140,10 +155,11 @@ export default function ExploreScreen() {
       {/* ── Map ── */}
       <MapView
         ref={mapRef}
-        style={StyleSheet.absoluteFillObject}
-        initialRegion={LAHORE}
+        style={StyleSheet.absoluteFill}
+        initialRegion={initialRegion}
         showsUserLocation
         showsMyLocationButton
+        userInterfaceStyle="dark"
       >
         {grounds.map((ground) => (
           <Marker
@@ -222,7 +238,7 @@ export default function ExploreScreen() {
               : `${grounds.length} Grounds nearby`}
           </Text>
           <Text style={styles.sheetHint}>
-            {isExpanded ? "↓ drag to close" : "↑ drag up to see list"}
+            {isExpanded ? "drag to close" : "drag up to see list"}
           </Text>
         </View>
 
@@ -244,7 +260,7 @@ export default function ExploreScreen() {
                   {ground.name}
                 </Text>
                 <Text style={styles.rowArea}>
-                  📍 {ground.area}, {ground.city}
+                  <Icon name="location" size={13} />{" "}{ground.area}, {ground.city}
                 </Text>
                 <Text style={styles.rowRating}>
                   ⭐ {ground.avg_rating.toFixed(1)} · {ground.review_count}{" "}
@@ -266,7 +282,7 @@ export default function ExploreScreen() {
                     router.push(`/(player)/ground/${ground.id}` as never)
                   }
                 >
-                  <Text style={styles.viewBtnText}>View →</Text>
+                  <Text style={styles.viewBtnText}>View <Icon name="forward" size={15} /></Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -281,28 +297,28 @@ const styles = StyleSheet.create({
   // ── Pin ──
   pinWrap: { alignItems: "center" },
   pin: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "#1A5C38",
+    borderColor: colors.brand,
     maxWidth: 160,
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
   },
-  pinActive: { backgroundColor: "#1A5C38", borderColor: "#1A5C38" },
+  pinActive: { backgroundColor: colors.primary, borderColor: colors.brand },
   pinName: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#0D1F15",
+    color: colors.text,
     marginBottom: 1,
   },
-  pinNameActive: { color: "#FFFFFF" },
-  pinPrice: { fontSize: 10, fontWeight: "600", color: "#1A5C38" },
-  pinPriceActive: { color: "#A8D5B5" },
+  pinNameActive: { color: colors.white },
+  pinPrice: { fontSize: 10, fontWeight: "700", color: colors.accent },
+  pinPriceActive: { color: colors.brand },
   // Triangle arrow pointing down to exact coordinate
   pinArrow: {
     width: 0,
@@ -312,16 +328,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 8,
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderTopColor: "#1A5C38",
+    borderTopColor: colors.brand,
   },
-  pinArrowActive: { borderTopColor: "#1A5C38" },
+  pinArrowActive: { borderTopColor: colors.brand },
 
   // ── Header ──
   headerOverlay: { position: "absolute", top: 0, left: 0, right: 0 },
   headerCard: {
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: colors.surface,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -329,8 +345,8 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  headerTitle: { fontSize: 17, fontWeight: "800", color: "#0D1F15" },
-  headerSub: { fontSize: 12, color: "#5A7264", marginTop: 2 },
+  headerTitle: { fontSize: 17, fontWeight: "800", color: colors.text },
+  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
 
   // ── Sheet ──
   sheet: {
@@ -338,7 +354,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowOpacity: 0.15,
@@ -350,48 +366,48 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F4F2",
+    borderBottomColor: colors.border,
   },
   handle: {
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#D0DDD7",
+    backgroundColor: colors.borderStrong,
     marginBottom: 8,
   },
-  sheetTitle: { fontSize: 15, fontWeight: "800", color: "#0D1F15" },
-  sheetHint: { fontSize: 11, color: "#A0B4A8", marginTop: 2 },
+  sheetTitle: { fontSize: 15, fontWeight: "800", color: colors.text },
+  sheetHint: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
 
   // ── Ground row ──
   row: {
     flexDirection: "row",
-    backgroundColor: "#F9FBF9",
+    backgroundColor: colors.surfaceRaised,
     borderRadius: 14,
     padding: 12,
     marginTop: 10,
     borderWidth: 1.5,
-    borderColor: "#E8F0EB",
+    borderColor: colors.border,
   },
-  rowActive: { borderColor: "#1A5C38", backgroundColor: "#F0FAF4" },
+  rowActive: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
   rowName: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#0D1F15",
+    color: colors.text,
     marginBottom: 3,
   },
-  rowArea: { fontSize: 12, color: "#5A7264", marginBottom: 2 },
-  rowRating: { fontSize: 11, color: "#A0B4A8" },
+  rowArea: { fontSize: 12, color: colors.textSecondary, marginBottom: 2 },
+  rowRating: { fontSize: 11, color: colors.textMuted },
   rowPrice: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#1A5C38",
+    fontFamily: fonts.display,
+    fontSize: 19,
+    color: colors.accent,
     marginBottom: 6,
   },
   viewBtn: {
-    backgroundColor: "#1A5C38",
+    backgroundColor: colors.accent,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  viewBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 12 },
+  viewBtnText: { color: colors.onAccent, fontWeight: "700", fontSize: 12 },
 });

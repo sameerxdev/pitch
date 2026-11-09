@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import type { BookingStatus, GroundStatus, SlotStatus } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
 
 type BadgeVariant = "green" | "amber" | "red" | "grey" | "blue";
 
@@ -11,11 +12,11 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, { container: string; text: string }> = {
-  green: { container: "bg-green-pale", text: "text-green" },
+  green: { container: "bg-green-pale", text: "text-brand" },
   amber: { container: "bg-amber-pale", text: "text-amber-dark" },
-  red: { container: "bg-red-pale", text: "text-red" },
+  red: { container: "bg-red-pale", text: "text-red-soft" },
   grey: { container: "bg-pitch-bg", text: "text-pitch-secondary" },
-  blue: { container: "bg-blue-50", text: "text-blue-700" },
+  blue: { container: "bg-info-soft", text: "text-info" },
 };
 
 export function Badge({ label, variant, size = "sm" }: BadgeProps) {
