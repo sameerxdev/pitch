@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, Image } from "react-native";
+import { View, Image } from "react-native";
 import { StarRating } from "@/components/ui/StarRating";
 import { formatDate, anonymizeName } from "@/utils/format";
 import type { Review } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
 
 interface ReviewCardProps {
   review: Review;
@@ -19,7 +20,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
   ].filter((r) => r.value != null);
 
   return (
-    <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+    <View className="bg-pitch-card rounded-2xl p-4 mb-3 shadow-sm">
       <View className="flex-row items-start justify-between mb-2">
         <View>
           <Text className="text-pitch-text font-bold text-sm">
@@ -61,7 +62,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
 
       {review.manager_reply ? (
         <View className="bg-green-pale border-l-4 border-green rounded-r-lg p-3 mt-2">
-          <Text className="text-green text-xs font-bold mb-1">Ground's reply</Text>
+          <Text className="text-brand text-xs font-bold mb-1">Ground's reply</Text>
           <Text className="text-pitch-text text-sm">{review.manager_reply}</Text>
         </View>
       ) : null}

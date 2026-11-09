@@ -1,5 +1,8 @@
 import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 import { getFacilityIcon, isKnownFacilityLabel } from "@/constants/facilities";
 
 interface FacilityChipsProps {
@@ -11,16 +14,28 @@ export function FacilityChips({ facilities }: FacilityChipsProps) {
   if (!visible.length) return null;
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-1">
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
       {visible.map((facility) => (
         <View
           key={facility}
-          className="flex-row items-center bg-pitch-bg border border-pitch-border rounded-full px-3 py-1.5 mx-1"
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 7,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: 999,
+            paddingHorizontal: 13,
+            paddingVertical: 9,
+          }}
         >
-          <Text className="text-sm mr-1">{getFacilityIcon(facility)}</Text>
-          <Text className="text-pitch-secondary text-xs capitalize">{facility}</Text>
+          <Icon name={getFacilityIcon(facility)} size={15} color={colors.brand} />
+          <Text style={{ fontSize: 13, fontWeight: "600", textTransform: "capitalize" }}>
+            {facility}
+          </Text>
         </View>
       ))}
-    </ScrollView>
+    </View>
   );
 }

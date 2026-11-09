@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -14,6 +12,9 @@ import { updateMe } from "@/api/auth";
 import { useAuthStore } from "@/stores/authStore";
 import { getApiErrorMessage } from "@/api/client";
 import { PAKISTAN_CITIES } from "@/constants/routes";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function ProfileSetupScreen() {
   const { updateUser } = useAuthStore();
@@ -47,19 +48,19 @@ export default function ProfileSetupScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
         <Text
           style={{
             fontSize: 28,
             fontWeight: "800",
-            color: "#0D1F15",
+            color: colors.text,
             marginBottom: 8,
           }}
         >
           Complete your profile
         </Text>
-        <Text style={{ color: "#5A7264", fontSize: 14, marginBottom: 36 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 36 }}>
           Just a couple of details to get you started.
         </Text>
 
@@ -67,7 +68,7 @@ export default function ProfileSetupScreen() {
         <View style={{ marginBottom: 20 }}>
           <Text
             style={{
-              color: "#0D1F15",
+              color: colors.text,
               fontWeight: "600",
               fontSize: 14,
               marginBottom: 6,
@@ -82,22 +83,22 @@ export default function ProfileSetupScreen() {
               setErrors((e) => ({ ...e, name: undefined }));
             }}
             placeholder="e.g. Ahmed Raza"
-            placeholderTextColor="#A0B4A8"
+            placeholderTextColor={colors.textMuted}
             returnKeyType="next"
             accessibilityLabel="Full name input"
             style={{
               borderWidth: 1.5,
-              borderColor: errors.name ? "#E34C3C" : "#E2EAE5",
+              borderColor: errors.name ? colors.danger : colors.border,
               borderRadius: 12,
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               paddingHorizontal: 16,
               paddingVertical: 14,
               fontSize: 16,
-              color: "#0D1F15",
+              color: colors.text,
             }}
           />
           {errors.name ? (
-            <Text style={{ color: "#E34C3C", fontSize: 12, marginTop: 4 }}>
+            <Text style={{ color: colors.danger, fontSize: 12, marginTop: 4 }}>
               {errors.name}
             </Text>
           ) : null}
@@ -107,7 +108,7 @@ export default function ProfileSetupScreen() {
         <View style={{ marginBottom: 32 }}>
           <Text
             style={{
-              color: "#0D1F15",
+              color: colors.text,
               fontWeight: "600",
               fontSize: 14,
               marginBottom: 6,
@@ -121,9 +122,9 @@ export default function ProfileSetupScreen() {
             accessibilityLabel="Select city"
             style={{
               borderWidth: 1.5,
-              borderColor: errors.city ? "#E34C3C" : "#E2EAE5",
+              borderColor: errors.city ? colors.danger : colors.border,
               borderRadius: 12,
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               paddingHorizontal: 16,
               paddingVertical: 14,
               flexDirection: "row",
@@ -131,13 +132,13 @@ export default function ProfileSetupScreen() {
               alignItems: "center",
             }}
           >
-            <Text style={{ fontSize: 16, color: city ? "#0D1F15" : "#A0B4A8" }}>
+            <Text style={{ fontSize: 16, color: city ? colors.text : colors.textMuted }}>
               {city || "Select your city"}
             </Text>
-            <Text style={{ color: "#5A7264" }}>▼</Text>
+            <Text style={{ color: colors.textSecondary }}>▼</Text>
           </TouchableOpacity>
           {errors.city ? (
-            <Text style={{ color: "#E34C3C", fontSize: 12, marginTop: 4 }}>
+            <Text style={{ color: colors.danger, fontSize: 12, marginTop: 4 }}>
               {errors.city}
             </Text>
           ) : null}
@@ -147,7 +148,7 @@ export default function ProfileSetupScreen() {
           onPress={handleSubmit}
           disabled={loading}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.accent,
             borderRadius: 14,
             paddingVertical: 16,
             alignItems: "center",
@@ -155,10 +156,10 @@ export default function ProfileSetupScreen() {
           }}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-              Let's go! →
+            <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
+              Let's go! <Icon name="forward" size={15} />
             </Text>
           )}
         </TouchableOpacity>
@@ -175,7 +176,7 @@ export default function ProfileSetupScreen() {
         >
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               maxHeight: "70%",
@@ -185,18 +186,18 @@ export default function ProfileSetupScreen() {
               style={{
                 padding: 20,
                 borderBottomWidth: 1,
-                borderBottomColor: "#E2EAE5",
+                borderBottomColor: colors.border,
                 flexDirection: "row",
                 justifyContent: "space-between",
               }}
             >
               <Text
-                style={{ fontSize: 18, fontWeight: "700", color: "#0D1F15" }}
+                style={{ fontSize: 18, fontWeight: "700", color: colors.text }}
               >
                 Select City
               </Text>
               <TouchableOpacity onPress={() => setShowCityPicker(false)}>
-                <Text style={{ color: "#5A7264", fontSize: 16 }}>Done</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Done</Text>
               </TouchableOpacity>
             </View>
             <FlatList
@@ -213,14 +214,14 @@ export default function ProfileSetupScreen() {
                     paddingHorizontal: 20,
                     paddingVertical: 16,
                     borderBottomWidth: 1,
-                    borderBottomColor: "#F3F5F2",
-                    backgroundColor: city === item ? "#E8F3EE" : "#FFFFFF",
+                    borderBottomColor: colors.border,
+                    backgroundColor: city === item ? colors.brandSoft : colors.surface,
                   }}
                 >
                   <Text
                     style={{
                       fontSize: 16,
-                      color: "#0D1F15",
+                      color: colors.text,
                       fontWeight: city === item ? "700" : "400",
                     }}
                   >

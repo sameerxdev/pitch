@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -12,16 +11,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { usePlatformAnalytics } from "@/hooks/useAdmin";
 import { getApiErrorMessage } from "@/api/client";
 import { StatTile } from "@/components/admin/StatTile";
+import { PeriodFilter, periodLabel, useAnalyticsFilter } from "@/components/analytics/PeriodFilter";
 import { RevenueChart } from "@/components/owner/RevenueChart";
 import { formatPKR } from "@/utils/format";
-
-type Period = "today" | "week" | "month";
-
-const PERIODS: Array<{ key: Period; label: string }> = [
-  { key: "today", label: "Today" },
-  { key: "week", label: "Week" },
-  { key: "month", label: "Month" },
-];
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 const STATUS_LABELS: Record<string, string> = {
   on_hold: "On hold",
@@ -34,72 +29,45 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function AdminOverviewScreen() {
   const router = useRouter();
-  const [period, setPeriod] = useState<Period>("week");
+  const { period, setPeriod, anchor, setAnchor, anchorKey } = useAnalyticsFilter("week");
   const { data, isLoading, isError, error, isFetching, refetch } =
-    usePlatformAnalytics(period);
+    usePlatformAnalytics(period, anchorKey);
 
   const statuses = Object.entries(data?.booking_status_breakdown ?? {});
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 28 }}
         refreshControl={
-          <RefreshControl refreshing={isFetching} onRefresh={() => refetch()} />
+          <RefreshControl refreshing={isFetching} onRefresh={() => void refetch()} />
         }
       >
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#0D1F15" }}>
+        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text }}>
           Platform
         </Text>
-        <Text style={{ color: "#5A7264", fontSize: 13, marginTop: 4, marginBottom: 16 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4, marginBottom: 16 }}>
           PITCH administration
         </Text>
 
-        <View
-          style={{
-            flexDirection: "row",
-            backgroundColor: "#E2EAE5",
-            borderRadius: 12,
-            padding: 3,
-            marginBottom: 20,
-          }}
-        >
-          {PERIODS.map((p) => (
-            <TouchableOpacity
-              key={p.key}
-              onPress={() => setPeriod(p.key)}
-              style={{
-                flex: 1,
-                paddingVertical: 8,
-                borderRadius: 10,
-                alignItems: "center",
-                backgroundColor: period === p.key ? "#FFFFFF" : "transparent",
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "700",
-                  fontSize: 13,
-                  color: period === p.key ? "#0D1F15" : "#5A7264",
-                }}
-              >
-                {p.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <PeriodFilter
+          period={period}
+          anchor={anchor}
+          onPeriodChange={setPeriod}
+          onAnchorChange={setAnchor}
+        />
 
         {isLoading ? (
           <View style={{ paddingVertical: 48, alignItems: "center" }}>
-            <ActivityIndicator size="large" color="#1A5C38" />
+            <ActivityIndicator size="large" color={colors.brand} />
           </View>
         ) : isError ? (
           <View style={{ alignItems: "center", paddingVertical: 32 }}>
-            <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+            <Text style={{ color: colors.danger, textAlign: "center" }}>
               {getApiErrorMessage(error)}
             </Text>
             <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
-              <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
+              <Text style={{ color: colors.brand, fontWeight: "700" }}>Retry</Text>
             </TouchableOpacity>
           </View>
         ) : data ? (
@@ -109,25 +77,25 @@ export default function AdminOverviewScreen() {
               <TouchableOpacity
                 onPress={() => router.push("/(admin)/(tabs)/grounds" as never)}
                 style={{
-                  backgroundColor: "#FFF6E5",
+                  backgroundColor: colors.amberSoft,
                   borderRadius: 16,
                   padding: 16,
                   marginBottom: 16,
                   borderWidth: 1,
-                  borderColor: "#F0D9A8",
+                  borderColor: colors.amberBorder,
                 }}
               >
-                <Text style={{ fontWeight: "800", color: "#8A6510" }}>
+                <Text style={{ fontWeight: "800", color: colors.amberLight }}>
                   {data.totals.grounds_pending} ground
                   {data.totals.grounds_pending === 1 ? "" : "s"} awaiting verification
                 </Text>
-                <Text style={{ color: "#A08040", fontSize: 12, marginTop: 4 }}>
-                  Tap to review the queue →
+                <Text style={{ color: colors.amberLight, fontSize: 12, marginTop: 4 }}>
+                  Tap to review the queue <Icon name="forward" size={15} />
                 </Text>
               </TouchableOpacity>
             )}
 
-            <Text style={sectionTitle}>This {period === "today" ? "day" : period}</Text>
+            <Text style={sectionTitle}>{periodLabel(period, anchor)}</Text>
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
               <StatTile label="Bookings" value={data.period_metrics.bookings} />
               <StatTile
@@ -178,10 +146,10 @@ export default function AdminOverviewScreen() {
                 <Text style={cardTitle}>Booking outcomes</Text>
                 {statuses.map(([status, count]) => (
                   <View key={status} style={row}>
-                    <Text style={{ color: "#0D1F15", fontSize: 14 }}>
+                    <Text style={{ color: colors.text, fontSize: 14 }}>
                       {STATUS_LABELS[status] ?? status}
                     </Text>
-                    <Text style={{ color: "#5A7264", fontWeight: "700" }}>{count}</Text>
+                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>{count}</Text>
                   </View>
                 ))}
               </View>
@@ -193,12 +161,12 @@ export default function AdminOverviewScreen() {
                 {data.top_grounds.map((g) => (
                   <View key={g.ground_id} style={row}>
                     <Text
-                      style={{ color: "#0D1F15", fontSize: 14, flex: 1, marginRight: 12 }}
+                      style={{ color: colors.text, fontSize: 14, flex: 1, marginRight: 12 }}
                       numberOfLines={1}
                     >
                       {g.ground_name || "Unnamed ground"}
                     </Text>
-                    <Text style={{ color: "#5A7264", fontSize: 13 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
                       {g.bookings} · {formatPKR(g.revenue)}
                     </Text>
                   </View>
@@ -206,7 +174,7 @@ export default function AdminOverviewScreen() {
               </View>
             )}
 
-            {data.daily_volume.length > 0 && (
+            {period !== "day" && data.daily_volume.length > 0 && (
               <View style={{ ...card, overflow: "hidden" }}>
                 <RevenueChart data={data.daily_volume} />
               </View>
@@ -220,19 +188,19 @@ export default function AdminOverviewScreen() {
 
 const sectionTitle = {
   fontWeight: "700" as const,
-  color: "#0D1F15",
+  color: colors.text,
   fontSize: 14,
   marginBottom: 8,
 };
 const card = {
-  backgroundColor: "#FFFFFF",
+  backgroundColor: colors.surface,
   borderRadius: 20,
   padding: 16,
   marginBottom: 16,
 };
 const cardTitle = {
   fontWeight: "700" as const,
-  color: "#0D1F15",
+  color: colors.text,
   marginBottom: 12,
 };
 const row = {
@@ -241,5 +209,5 @@ const row = {
   justifyContent: "space-between" as const,
   paddingVertical: 8,
   borderTopWidth: 1,
-  borderTopColor: "#F3F5F2",
+  borderTopColor: colors.border,
 };

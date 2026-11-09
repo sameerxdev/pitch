@@ -1,10 +1,11 @@
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { getGrounds, getGround, getGroundSlots, getGroundReviews } from "@/api/grounds";
 import type { GroundSearchParams } from "@/api/types";
 
 export function useGrounds(params: GroundSearchParams = {}) {
   return useInfiniteQuery({
     queryKey: ["grounds", params],
+    placeholderData: keepPreviousData,
     queryFn: ({ pageParam = 0 }) =>
       getGrounds({ ...params, limit: 20, offset: pageParam as number }),
     getNextPageParam: (lastPage, allPages) => {

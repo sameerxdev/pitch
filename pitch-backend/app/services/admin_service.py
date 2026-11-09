@@ -15,6 +15,7 @@ from app.core.exceptions import business_rule, not_found, validation_error
 from app.core.security import utcnow
 from app.services import notification_service
 from app.services.serializers import ground_to_out, review_to_out, user_to_out
+from app.services.analytics_period import PKT_OFFSET, resolve_period
 from app.utils.ids import to_oid
 
 GROUND_STATUSES = {"pending_verification", "active", "inactive", "suspended"}
@@ -238,21 +239,15 @@ async def _recalc_ground_rating(db: AsyncIOMotorDatabase, ground_id) -> None:
 
 # ---- Platform analytics -----------------------------------------------------
 
-def _period_bounds(period: str) -> tuple[datetime, datetime, list[str]]:
-    now = datetime.now(tz=timezone.utc)
-    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    spans = {"today": 1, "week": 7, "month": 30}
-    if period not in spans:
-        raise validation_error("period must be one of: today, week, month")
-    start = today - timedelta(days=spans[period] - 1)
-    end = today + timedelta(days=1)
-    days = [(start + timedelta(days=i)).date().isoformat() for i in range(spans[period])]
-    return start, end, days
-
-
-async def get_platform_analytics(db: AsyncIOMotorDatabase, *, period: str = "week") -> dict:
-    start, end, days = _period_bounds(period)
-    window = {"created_at": {"$gte": start, "$lt": end}}
+async def get_platform_analytics(
+    db: AsyncIOMotorDatabase,
+    *,
+    period: str = "week",
+    anchor: Optional[str] = None,
+) -> dict:
+    period_window = resolve_period(period, anchor)
+    days = period_window.days
+    window = {"created_at": {"$gte": period_window.start, "$lt": period_window.end}}
 
     totals = {
         "players": await db.users.count_documents({"role": "player"}),
@@ -304,7 +299,7 @@ async def get_platform_analytics(db: AsyncIOMotorDatabase, *, period: str = "wee
             {"$match": {**window, "status": {"$nin": ["cancelled"]}}},
             {
                 "$group": {
-                    "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                    "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at", "timezone": PKT_OFFSET}},
                     "count": {"$sum": 1},
                 }
             },

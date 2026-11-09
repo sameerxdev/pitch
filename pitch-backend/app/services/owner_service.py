@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from typing import List, Optional
 
 from bson import ObjectId
@@ -9,36 +9,9 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.exceptions import conflict, not_found
 from app.core.security import utcnow
 from app.services import notification_service
+from app.services.analytics_period import PKT_OFFSET, resolve_period
 from app.services.serializers import assignment_to_out
 from app.utils.ids import to_oid
-
-
-def _period_range(period: str) -> tuple[datetime, datetime, datetime, datetime, list[str]]:
-    """Return (current_start, current_end, previous_start, previous_end, day_buckets)."""
-    now = datetime.now(tz=timezone.utc)
-    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    if period == "today":
-        current_start = today
-        current_end = today + timedelta(days=1)
-        previous_start = today - timedelta(days=1)
-        previous_end = today
-    elif period == "week":
-        current_start = today - timedelta(days=6)
-        current_end = today + timedelta(days=1)
-        previous_start = current_start - timedelta(days=7)
-        previous_end = current_start
-    else:  # month
-        current_start = today - timedelta(days=29)
-        current_end = today + timedelta(days=1)
-        previous_start = current_start - timedelta(days=30)
-        previous_end = current_start
-
-    days: list[str] = []
-    cur = current_start
-    while cur < current_end:
-        days.append(cur.date().isoformat())
-        cur += timedelta(days=1)
-    return current_start, current_end, previous_start, previous_end, days
 
 
 def _trend(current: float, previous: float) -> float:
@@ -87,6 +60,7 @@ async def get_analytics(
     owner_id: ObjectId,
     *,
     period: str,
+    anchor: Optional[str] = None,
     ground_id: Optional[str] = None,
 ) -> dict:
     grounds = await db.grounds.find({"owner_id": owner_id}).to_list(length=200)
@@ -100,7 +74,10 @@ async def get_analytics(
             raise forbidden("You do not own this ground.")
         filtered_ids = [gid]
 
-    cur_start, cur_end, prev_start, prev_end, days = _period_range(period)
+    window = resolve_period(period, anchor)
+    cur_start, cur_end = window.start, window.end
+    prev_start, prev_end = window.previous_start, window.previous_end
+    days = window.days
     cur = await _aggregate_metrics(db, filtered_ids, cur_start, cur_end)
     prev = await _aggregate_metrics(db, filtered_ids, prev_start, prev_end)
 
@@ -127,7 +104,7 @@ async def get_analytics(
             {
                 "$group": {
                     "_id": {
-                        "$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}
+                        "$dateToString": {"format": "%Y-%m-%d", "date": "$created_at", "timezone": PKT_OFFSET}
                     },
                     "count": {"$sum": 1},
                 }

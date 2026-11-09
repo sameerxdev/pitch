@@ -1,6 +1,8 @@
 import React from "react";
-import { TouchableOpacity, Text, View } from "react-native";
-import { Colors } from "@/constants/colors";
+import { StyleSheet, View } from "react-native";
+import { PressableScale } from "@/components/ui/PressableScale";
+import { Text } from "@/components/ui/Typography";
+import { Colors, fonts } from "@/constants/colors";
 import { formatSlotRange, formatPKR } from "@/utils/format";
 import type { Slot } from "@/api/types";
 
@@ -10,6 +12,14 @@ interface SlotCellProps {
   onPress: () => void;
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  available: "Open",
+  on_hold: "On hold",
+  booked: "Booked",
+  blocked: "Blocked",
+  selected: "Selected",
+};
+
 export function SlotCell({ slot, isSelected, onPress }: SlotCellProps) {
   const isDisabled =
     slot.status === "on_hold" ||
@@ -17,92 +27,50 @@ export function SlotCell({ slot, isSelected, onPress }: SlotCellProps) {
     slot.status === "blocked";
 
   const colorKey = isSelected ? "selected" : slot.status;
-  const colors = Colors.slot[colorKey as keyof typeof Colors.slot];
-
-  const statusLabels: Record<string, string> = {
-    available: "Available",
-    on_hold: "On Hold",
-    booked: "Booked",
-    blocked: "Blocked",
-    selected: "Selected",
-  };
+  const tone = Colors.slot[colorKey as keyof typeof Colors.slot];
 
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       disabled={isDisabled}
       accessibilityRole="button"
-      accessibilityLabel={`${formatSlotRange(slot.start_hour, slot.end_hour)}, ${formatPKR(slot.price)}, ${statusLabels[colorKey] ?? ""}`}
+      accessibilityLabel={`${formatSlotRange(slot.start_hour, slot.end_hour)}, ${formatPKR(slot.price)}, ${STATUS_LABELS[colorKey] ?? ""}`}
       accessibilityState={{ selected: isSelected, disabled: isDisabled }}
-      style={{
-        backgroundColor: colors.bg,
-        borderColor: colors.border,
-        borderWidth: 1.5,
-        borderRadius: 14,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        alignItems: "center",
-        minHeight: 96,
-        justifyContent: "center",
-      }}
+      style={[styles.cell, { backgroundColor: tone.bg, borderColor: tone.border }]}
     >
       <Text
-        style={{ color: colors.text, fontWeight: "700", fontSize: 14 }}
+        style={[styles.time, { color: tone.text }]}
         numberOfLines={1}
         adjustsFontSizeToFit
-        minimumFontScale={0.88}
+        minimumFontScale={0.8}
       >
         {formatSlotRange(slot.start_hour, slot.end_hour)}
       </Text>
-      <Text
-        style={{
-          color: colors.text,
-          fontWeight: "800",
-          fontSize: 13,
-          marginTop: 4,
-        }}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.85}
-      >
+      <Text style={[styles.price, { color: tone.text }]} numberOfLines={1}>
         {formatPKR(slot.price)}
       </Text>
-      <Text
-        style={{ color: colors.text, fontSize: 11, marginTop: 4, opacity: 0.88 }}
-        numberOfLines={1}
-      >
-        {isSelected ? "Selected" : statusLabels[slot.status] ?? slot.status}
+      <Text style={[styles.status, { color: tone.text }]} numberOfLines={1}>
+        {STATUS_LABELS[colorKey] ?? slot.status}
       </Text>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
-interface SlotLegendProps {}
-
-export function SlotLegend(_: SlotLegendProps) {
+export function SlotLegend() {
   const items: Array<{ status: keyof typeof Colors.slot; label: string }> = [
-    { status: "available", label: "Available" },
-    { status: "on_hold", label: "On Hold" },
+    { status: "available", label: "Open" },
+    { status: "on_hold", label: "On hold" },
     { status: "booked", label: "Booked" },
     { status: "selected", label: "Selected" },
   ];
 
   return (
-    <View className="flex-row flex-wrap gap-3 mt-3">
+    <View className="flex-row flex-wrap gap-4 mt-5">
       {items.map(({ status, label }) => {
-        const colors = Colors.slot[status];
+        const tone = Colors.slot[status];
         return (
-          <View key={status} className="flex-row items-center gap-1">
-            <View
-              style={{
-                width: 12,
-                height: 12,
-                borderRadius: 3,
-                backgroundColor: colors.bg,
-                borderWidth: 1.5,
-                borderColor: colors.border,
-              }}
-            />
+          <View key={status} className="flex-row items-center gap-1.5">
+            <View style={[styles.swatch, { backgroundColor: tone.bg, borderColor: tone.border }]} />
             <Text className="text-pitch-secondary text-xs">{label}</Text>
           </View>
         );
@@ -110,3 +78,19 @@ export function SlotLegend(_: SlotLegendProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  cell: {
+    borderWidth: 1.5,
+    borderRadius: 16,
+    paddingVertical: 11,
+    paddingHorizontal: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 92,
+  },
+  time: { fontFamily: fonts.display, fontSize: 17 },
+  price: { fontSize: 12, fontWeight: "700", marginTop: 3 },
+  status: { fontSize: 11, marginTop: 3, opacity: 0.8 },
+  swatch: { width: 12, height: 12, borderRadius: 4, borderWidth: 1.5 },
+});

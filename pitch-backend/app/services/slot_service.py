@@ -109,12 +109,33 @@ async def apply_slots(
 
     days_affected = 0
     total_upserted = 0
+    skipped: list[dict] = []
     now = utcnow()
     cur = from_d
     while cur <= to_d:
         date_str = cur.isoformat()
         days_affected += 1
+        day_slots = await db.slots.find({"ground_id": gid, "date": date_str}).to_list(length=48)
         for tpl in body.slots:
+            clash = next(
+                (
+                    s for s in day_slots
+                    if s["start_hour"] != tpl.start_hour
+                    and tpl.start_hour < s["end_hour"]
+                    and tpl.end_hour > s["start_hour"]
+                ),
+                None,
+            )
+            if clash:
+                skipped.append({
+                    "date": date_str,
+                    "start_hour": tpl.start_hour,
+                    "end_hour": tpl.end_hour,
+                    "reason": "overlap",
+                    "conflict_start_hour": clash["start_hour"],
+                    "conflict_end_hour": clash["end_hour"],
+                })
+                continue
             hours = tpl.end_hour - tpl.start_hour
             default_rate = body.hourly_rate_night if tpl.rate_type == "night" else body.hourly_rate_day
             price = tpl.price if tpl.price is not None else hours * default_rate
@@ -123,6 +144,14 @@ async def apply_slots(
             )
             if existing and existing.get("status") in ("booked", "on_hold"):
                 # do not overwrite booked/on_hold; skip
+                skipped.append({
+                    "date": date_str,
+                    "start_hour": tpl.start_hour,
+                    "end_hour": tpl.end_hour,
+                    "reason": existing["status"],
+                    "conflict_start_hour": existing["start_hour"],
+                    "conflict_end_hour": existing["end_hour"],
+                })
                 continue
             doc = {
                 "ground_id": gid,
@@ -143,11 +172,14 @@ async def apply_slots(
                 upsert=True,
             )
             total_upserted += 1
+            day_slots = [s for s in day_slots if s["start_hour"] != tpl.start_hour]
+            day_slots.append({"start_hour": tpl.start_hour, "end_hour": tpl.end_hour})
         cur = cur + timedelta(days=1)
     return {
         "days_affected": days_affected,
         "slots_per_day": len(body.slots),
         "total_slots_upserted": total_upserted,
+        "skipped": skipped,
     }
 
 

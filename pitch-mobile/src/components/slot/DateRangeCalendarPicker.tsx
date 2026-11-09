@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, TouchableOpacity, Alert } from "react-native";
 import {
   addDays,
   differenceInCalendarDays,
@@ -10,6 +10,8 @@ import {
   startOfDay,
 } from "date-fns";
 import { SlotCalendar } from "@/components/slot/SlotCalendar";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 export const DEFAULT_MAX_RANGE_SPAN_DAYS = 90;
 
@@ -162,15 +164,15 @@ export function DateRangeCalendarPicker({
           borderRadius: 12,
           borderWidth: 1.5,
           borderColor:
-            mode === "single" || active ? "#1A5C38" : "#E2EAE5",
+            mode === "single" || active ? colors.brand : colors.border,
           backgroundColor:
-            mode === "single" || active ? "#E8F3EE" : "#F3F5F2",
+            mode === "single" || active ? colors.brandSoft : colors.bg,
         }}
       >
-        <Text style={{ color: "#5A7264", fontSize: 11, marginBottom: 4 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>
           {label}
         </Text>
-        <Text style={{ color: "#0D1F15", fontWeight: "700", fontSize: 14 }}>
+        <Text style={{ color: colors.text, fontWeight: "700", fontSize: 14 }}>
           {format(date, "dd MMM yyyy")}
         </Text>
       </TouchableOpacity>
@@ -194,7 +196,7 @@ export function DateRangeCalendarPicker({
       <View
         style={{
           flexDirection: "row",
-          backgroundColor: "#E2EAE5",
+          backgroundColor: colors.surfaceRaised,
           borderRadius: 10,
           padding: 3,
           marginBottom: 12,
@@ -214,14 +216,14 @@ export function DateRangeCalendarPicker({
               paddingVertical: 8,
               borderRadius: 8,
               alignItems: "center",
-              backgroundColor: mode === opt.key ? "#FFFFFF" : "transparent",
+              backgroundColor: mode === opt.key ? colors.surface : "transparent",
             }}
           >
             <Text
               style={{
                 fontWeight: "700",
                 fontSize: 12,
-                color: mode === opt.key ? "#0D1F15" : "#5A7264",
+                color: mode === opt.key ? colors.text : colors.textSecondary,
               }}
             >
               {opt.label}
@@ -239,7 +241,7 @@ export function DateRangeCalendarPicker({
         </View>
       )}
 
-      <Text style={{ color: "#A0B4A8", fontSize: 11, marginBottom: 8 }}>
+      <Text style={{ color: colors.textMuted, fontSize: 11, marginBottom: 8 }}>
         {mode === "single"
           ? "Tap a date on the calendar (today onward)"
           : activeField === "from"
@@ -251,7 +253,7 @@ export function DateRangeCalendarPicker({
 
       <View
         style={{
-          backgroundColor: "#F3F5F2",
+          backgroundColor: colors.bg,
           borderRadius: 12,
           padding: 10,
         }}
@@ -267,11 +269,11 @@ export function DateRangeCalendarPicker({
       </View>
 
       {rangeError ? (
-        <Text style={{ color: "#E34C3C", fontSize: 12, marginTop: 8 }}>
+        <Text style={{ color: colors.danger, fontSize: 12, marginTop: 8 }}>
           {rangeError}
         </Text>
       ) : (
-        <Text style={{ color: "#5A7264", fontSize: 11, marginTop: 8 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 8 }}>
           {disablePast ? "Past dates are disabled. " : ""}
           {mode === "range" ? `Max range: ${maxSpanDays} days.` : ""}
         </Text>

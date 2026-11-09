@@ -1,7 +1,6 @@
 import React from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -12,6 +11,9 @@ import { FlashList } from "@shopify/flash-list";
 import { useOwnerGrounds } from "@/hooks/useOwner";
 import { getApiErrorMessage } from "@/api/client";
 import { GroundStatusBadge } from "@/components/ui/Badge";
+import { Text } from "@/components/ui/Typography";
+import { IconBadge } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function OwnerGroundsScreen() {
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function OwnerGroundsScreen() {
   return (
     <SafeAreaView
       edges={["top"]}
-      style={{ flex: 1, backgroundColor: "#F3F5F2" }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
     >
       <View
         style={{
@@ -39,20 +41,20 @@ export default function OwnerGroundsScreen() {
         }}
       >
         <Text
-          style={{ flex: 1, fontSize: 24, fontWeight: "800", color: "#0D1F15" }}
+          style={{ flex: 1, fontSize: 24, fontWeight: "800", color: colors.text }}
         >
           My Grounds
         </Text>
         <TouchableOpacity
           onPress={() => router.push("/(owner)/(tabs)/ground/new" as never)}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.primary,
             borderRadius: 12,
             paddingHorizontal: 16,
             paddingVertical: 8,
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>+ Add</Text>
+          <Text style={{ color: colors.white, fontWeight: "700" }}>+ Add</Text>
         </TouchableOpacity>
       </View>
 
@@ -60,7 +62,7 @@ export default function OwnerGroundsScreen() {
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
-          <ActivityIndicator size="large" color="#1A5C38" />
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : isError ? (
         <View
@@ -71,11 +73,11 @@ export default function OwnerGroundsScreen() {
             padding: 24,
           }}
         >
-          <Text style={{ color: "#E34C3C", textAlign: "center" }}>
+          <Text style={{ color: colors.danger, textAlign: "center" }}>
             {getApiErrorMessage(error)}
           </Text>
           <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
-            <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
+            <Text style={{ color: colors.brand, fontWeight: "700" }}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -84,12 +86,12 @@ export default function OwnerGroundsScreen() {
           keyExtractor={(g) => g.id}
           contentContainerStyle={{ padding: 20 }}
           refreshControl={
-            <RefreshControl refreshing={isFetching} onRefresh={() => refetch()} />
+            <RefreshControl refreshing={isFetching} onRefresh={() => void refetch()} />
           }
           renderItem={({ item }) => (
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderRadius: 16,
                 padding: 16,
                 marginBottom: 12,
@@ -106,7 +108,7 @@ export default function OwnerGroundsScreen() {
                   <Text
                     style={{
                       fontWeight: "700",
-                      color: "#0D1F15",
+                      color: colors.text,
                       fontSize: 16,
                     }}
                     numberOfLines={1}
@@ -114,14 +116,14 @@ export default function OwnerGroundsScreen() {
                     {item.name}
                   </Text>
                   <Text
-                    style={{ color: "#5A7264", fontSize: 13, marginTop: 2 }}
+                    style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}
                   >
                     {item.area}, {item.city}
                   </Text>
                 </View>
                 <GroundStatusBadge status={item.status} />
               </View>
-              <Text style={{ color: "#5A7264", fontSize: 12, marginTop: 12 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 12 }}>
                 Day: PKR {item.hourly_rate_day}/hr · Night: PKR{" "}
                 {item.hourly_rate_night}/hr
               </Text>
@@ -142,7 +144,7 @@ export default function OwnerGroundsScreen() {
                 >
                   <Text
                     style={{
-                      color: "#1A5C38",
+                      color: colors.brand,
                       fontWeight: "600",
                       fontSize: 13,
                     }}
@@ -157,7 +159,7 @@ export default function OwnerGroundsScreen() {
                 >
                   <Text
                     style={{
-                      color: "#1A5C38",
+                      color: colors.brand,
                       fontWeight: "600",
                       fontSize: 13,
                     }}
@@ -170,9 +172,9 @@ export default function OwnerGroundsScreen() {
           )}
           ListEmptyComponent={
             <View style={{ alignItems: "center", paddingTop: 48 }}>
-              <Text style={{ fontSize: 36 }}>🏟️</Text>
+              <IconBadge name="stadium" size={32} />
               <Text
-                style={{ color: "#5A7264", textAlign: "center", marginTop: 12 }}
+                style={{ color: colors.textSecondary, textAlign: "center", marginTop: 12 }}
               >
                 No grounds yet.{"\n"}Tap '+ Add' to create your first ground.
               </Text>

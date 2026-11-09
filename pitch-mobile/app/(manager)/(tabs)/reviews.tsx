@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -15,6 +13,9 @@ import { useReplyToReview } from "@/hooks/useManagerMutations";
 import { getApiErrorMessage } from "@/api/client";
 import { ReviewCard } from "@/components/ground/ReviewCard";
 import type { Review } from "@/api/types";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { Icon, IconBadge } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function ManagerReviewsScreen() {
   const { activeGround } = useManagerStore();
@@ -49,13 +50,13 @@ export default function ManagerReviewsScreen() {
   return (
     <SafeAreaView
       edges={["top"]}
-      style={{ flex: 1, backgroundColor: "#F3F5F2" }}
+      style={{ flex: 1, backgroundColor: colors.bg }}
     >
       <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
-        <Text style={{ fontSize: 24, fontWeight: "800", color: "#0D1F15" }}>
+        <Text style={{ fontSize: 24, fontWeight: "800", color: colors.text }}>
           Reviews
         </Text>
-        <Text style={{ color: "#5A7264", fontSize: 13, marginTop: 2 }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
           {activeGround.name}
         </Text>
       </View>
@@ -64,7 +65,7 @@ export default function ManagerReviewsScreen() {
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
-          <ActivityIndicator size="large" color="#1A5C38" />
+          <ActivityIndicator size="large" color={colors.brand} />
         </View>
       ) : isError ? (
         <View
@@ -75,9 +76,9 @@ export default function ManagerReviewsScreen() {
             padding: 24,
           }}
         >
-          <Text style={{ color: "#E34C3C" }}>Could not load reviews.</Text>
+          <Text style={{ color: colors.danger }}>Could not load reviews.</Text>
           <TouchableOpacity onPress={() => refetch()} style={{ marginTop: 12 }}>
-            <Text style={{ color: "#1A5C38", fontWeight: "700" }}>Retry</Text>
+            <Text style={{ color: colors.brand, fontWeight: "700" }}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -106,19 +107,19 @@ export default function ManagerReviewsScreen() {
                 >
                   <Text
                     style={{
-                      color: "#1A5C38",
+                      color: colors.brand,
                       fontWeight: "600",
                       fontSize: 13,
                     }}
                   >
-                    Reply ↩
+                    Reply <Icon name="reply" size={13} />
                   </Text>
                 </TouchableOpacity>
               )}
               {replyingTo === item.id && (
                 <View
                   style={{
-                    backgroundColor: "#E8F3EE",
+                    backgroundColor: colors.brandSoft,
                     borderRadius: 12,
                     padding: 12,
                     marginTop: 4,
@@ -128,11 +129,11 @@ export default function ManagerReviewsScreen() {
                     value={replyText}
                     onChangeText={setReplyText}
                     placeholder="Write a public reply..."
-                    placeholderTextColor="#A0B4A8"
+                    placeholderTextColor={colors.textMuted}
                     multiline
                     numberOfLines={3}
                     autoFocus
-                    style={{ color: "#0D1F15", fontSize: 14, minHeight: 60 }}
+                    style={{ color: colors.text, fontSize: 14, minHeight: 60 }}
                   />
                   <View
                     style={{
@@ -148,7 +149,7 @@ export default function ManagerReviewsScreen() {
                         setReplyText("");
                       }}
                     >
-                      <Text style={{ color: "#5A7264", fontWeight: "600" }}>
+                      <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>
                         Cancel
                       </Text>
                     </TouchableOpacity>
@@ -157,9 +158,9 @@ export default function ManagerReviewsScreen() {
                       disabled={replyMutation.isPending || !replyText.trim()}
                     >
                       {replyMutation.isPending ? (
-                        <ActivityIndicator size="small" color="#1A5C38" />
+                        <ActivityIndicator size="small" color={colors.brand} />
                       ) : (
-                        <Text style={{ color: "#1A5C38", fontWeight: "700" }}>
+                        <Text style={{ color: colors.brand, fontWeight: "700" }}>
                           Post Reply
                         </Text>
                       )}
@@ -171,9 +172,9 @@ export default function ManagerReviewsScreen() {
           )}
           ListEmptyComponent={
             <View style={{ alignItems: "center", paddingTop: 48 }}>
-              <Text style={{ fontSize: 36 }}>⭐</Text>
+              <IconBadge name="star" size={32} />
               <Text
-                style={{ color: "#5A7264", textAlign: "center", marginTop: 12 }}
+                style={{ color: colors.textSecondary, textAlign: "center", marginTop: 12 }}
               >
                 No reviews yet for this ground.
               </Text>

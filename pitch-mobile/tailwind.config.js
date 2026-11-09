@@ -1,3 +1,5 @@
+const { palette: p } = require("./src/constants/palette");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
@@ -5,37 +7,36 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        brand: { DEFAULT: p.brand, soft: p.brandSoft, border: p.brandBorder },
         green: {
-          DEFAULT: "#1A5C38",
-          light: "#2E8B57",
-          pale: "#E8F3EE",
-          border: "#C5DFD1",
-          dark: "#0F3D25",
+          DEFAULT: p.primary,
+          light: p.brand,
+          pale: p.brandSoft,
+          border: p.brandBorder,
+          dark: p.primaryPressed,
         },
         amber: {
-          DEFAULT: "#F5A623",
-          pale: "#FEF3DC",
-          border: "#F0C56A",
-          dark: "#9B6008",
+          DEFAULT: p.amber,
+          pale: p.amberSoft,
+          border: p.amberBorder,
+          dark: p.amberLight,
         },
-        red: {
-          DEFAULT: "#E34C3C",
-          pale: "#FDECEA",
-          border: "#EFBBBB",
+        accent: {
+          DEFAULT: p.accent,
+          pressed: p.accentPressed,
+          on: p.onAccent,
         },
+        red: { DEFAULT: p.dangerFill, soft: p.danger, pale: p.dangerSoft, border: p.dangerBorder },
+        info: { DEFAULT: p.info, soft: p.infoSoft },
         pitch: {
-          bg: "#F3F5F2",
-          card: "#FFFFFF",
-          border: "#E2EAE5",
-          text: "#0D1F15",
-          secondary: "#5A7264",
-          muted: "#A0B4A8",
+          bg: p.bg,
+          card: p.surface,
+          raised: p.surfaceRaised,
+          border: p.border,
+          text: p.text,
+          secondary: p.textSecondary,
+          muted: p.textMuted,
         },
-      },
-      fontFamily: {
-        sans: ["PlusJakartaSans_400Regular"],
-        medium: ["PlusJakartaSans_500Medium"],
-        bold: ["PlusJakartaSans_700Bold"],
       },
     },
   },

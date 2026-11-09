@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, Dimensions, Animated } from "react-native";
+import { View, Dimensions, Animated } from "react-native";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 const { width } = Dimensions.get("window");
 const FRAME_SIZE = width * 0.65;
@@ -44,7 +46,7 @@ export function ScannerOverlay() {
                 position: "absolute",
                 width: 28,
                 height: 28,
-                borderColor: "#FFFFFF",
+                borderColor: colors.border,
                 borderTopWidth: idx < 2 ? 3 : 0,
                 borderBottomWidth: idx >= 2 ? 3 : 0,
                 borderLeftWidth: idx === 0 || idx === 2 ? 3 : 0,

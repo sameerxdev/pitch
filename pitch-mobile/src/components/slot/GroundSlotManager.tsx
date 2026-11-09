@@ -1,14 +1,12 @@
 import React, { useMemo, useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { format, addDays, startOfDay, isBefore } from "date-fns";
+import { format, addDays, startOfDay, isBefore, parseISO } from "date-fns";
 import { SlotCalendar } from "@/components/slot/SlotCalendar";
 import {
   DateRangeCalendarPicker,
@@ -29,7 +27,10 @@ import {
   validateManualSlotTemplate,
   type ManualSlotTemplate,
 } from "@/utils/slotTemplates";
-import type { RateType, Slot, SlotStatus } from "@/api/types";
+import type { RateType, SkippedSlot, Slot, SlotStatus } from "@/api/types";
+import { Icon } from "@/components/ui/Icon";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 type Props = {
   groundId: string;
@@ -61,8 +62,8 @@ function RateTypeToggle({
             paddingVertical: 10,
             borderRadius: 10,
             borderWidth: 1.5,
-            borderColor: value === type ? "#1A5C38" : "#E2EAE5",
-            backgroundColor: value === type ? "#E8F3EE" : "#FFFFFF",
+            borderColor: value === type ? colors.brand : colors.border,
+            backgroundColor: value === type ? colors.brandSoft : colors.surface,
             alignItems: "center",
           }}
         >
@@ -70,7 +71,7 @@ function RateTypeToggle({
             style={{
               fontWeight: "700",
               fontSize: 13,
-              color: value === type ? "#1A5C38" : "#5A7264",
+              color: value === type ? colors.brand : colors.textSecondary,
               textTransform: "capitalize",
             }}
           >
@@ -119,8 +120,8 @@ function HourPicker({
               paddingHorizontal: 14,
               borderRadius: 10,
               borderWidth: 1.5,
-              borderColor: selected ? "#1A5C38" : "#E2EAE5",
-              backgroundColor: selected ? "#E8F3EE" : "#FFFFFF",
+              borderColor: selected ? colors.brand : colors.border,
+              backgroundColor: selected ? colors.brandSoft : colors.surface,
               minWidth: 76,
               alignItems: "center",
             }}
@@ -129,7 +130,7 @@ function HourPicker({
               style={{
                 fontWeight: "700",
                 fontSize: 13,
-                color: selected ? "#1A5C38" : "#5A7264",
+                color: selected ? colors.brand : colors.textSecondary,
               }}
             >
               {formatHour12(h)}
@@ -139,6 +140,21 @@ function HourPicker({
       })}
     </ScrollView>
   );
+}
+
+const MAX_SKIPPED_SHOWN = 6;
+
+function describeSkipped(skipped: SkippedSlot[]): string {
+  const lines = skipped.slice(0, MAX_SKIPPED_SHOWN).map((s) => {
+    const day = format(parseISO(s.date), "dd MMM");
+    const time = formatSlotRange(s.start_hour, s.end_hour);
+    if (s.reason === "overlap") {
+      return `${day}: ${time} overlaps ${formatSlotRange(s.conflict_start_hour, s.conflict_end_hour)}`;
+    }
+    return `${day}: ${time} is ${s.reason === "booked" ? "already booked" : "on hold"}`;
+  });
+  const hidden = skipped.length - MAX_SKIPPED_SHOWN;
+  return hidden > 0 ? [...lines, `and ${hidden} more`].join("\n") : lines.join("\n");
 }
 
 export function GroundSlotManager({ groundId, role = "manager" }: Props) {
@@ -184,6 +200,11 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
     hourlyDay,
     hourlyNight,
   );
+
+  const applyDateLabel =
+    dateMode === "single"
+      ? format(dateRange.from, "dd MMM yyyy")
+      : `${format(dateRange.from, "dd MMM")} – ${format(dateRange.to, "dd MMM yyyy")}`;
 
   function addDraftToList() {
     const template: ManualSlotTemplate = {
@@ -257,14 +278,19 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
           price: t.price,
         })),
       });
-      const dayLabel =
-        dateMode === "single"
-          ? format(dateRange.from, "dd MMM yyyy")
-          : `${fromDate} to ${toDate}`;
-      Alert.alert(
-        "Slots saved",
-        `Applied ${slotTemplates.length} slot(s) per day for ${dayLabel} (${result.total_slots_upserted} total).`,
-      );
+      const saved = result.total_slots_upserted;
+      if (saved > 0) {
+        setSlotTemplates([]);
+        setPreviewDate(startOfDay(dateRange.from));
+      }
+      if (result.skipped.length === 0) {
+        Alert.alert("Slots saved", `Added ${saved} slot(s) for ${applyDateLabel}.`);
+      } else {
+        Alert.alert(
+          saved > 0 ? "Some slots were skipped" : "No slots added",
+          `${saved > 0 ? `Added ${saved} slot(s). ` : ""}These were not added:\n\n${describeSkipped(result.skipped)}`,
+        );
+      }
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err));
     }
@@ -287,7 +313,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
   if (isGroundLoading) {
     return (
       <View style={{ padding: 24, alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#1A5C38" />
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }
@@ -295,7 +321,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
   if (!ground) {
     return (
       <View style={{ padding: 24, alignItems: "center" }}>
-        <Text style={{ color: "#5A7264" }}>Ground not found.</Text>
+        <Text style={{ color: colors.textSecondary }}>Ground not found.</Text>
       </View>
     );
   }
@@ -307,7 +333,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
     >
       <Text
         style={{
-          color: "#5A7264",
+          color: colors.textSecondary,
           fontSize: 13,
           marginBottom: 16,
           lineHeight: 20,
@@ -320,7 +346,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
 
       <View
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderRadius: 16,
           padding: 16,
           marginBottom: 16,
@@ -406,7 +432,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
 
         <Text style={[fieldLabel, { marginBottom: 6 }]}>
           Slot type{" "}
-          <Text style={{ color: "#A0B4A8", fontWeight: "400" }}>
+          <Text style={{ color: colors.textMuted, fontWeight: "400" }}>
             (auto from start time — tap to change)
           </Text>
         </Text>
@@ -424,7 +450,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
             value={draftPrice}
             onChangeText={setDraftPrice}
             placeholder={`Auto: ${formatPKR(draftPreviewPrice)}`}
-            placeholderTextColor="#A0B4A8"
+            placeholderTextColor={colors.textMuted}
             keyboardType="numeric"
             style={[inputStyle, { marginTop: 4 }]}
           />
@@ -437,11 +463,11 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
             paddingVertical: 12,
             borderRadius: 12,
             borderWidth: 1.5,
-            borderColor: "#1A5C38",
+            borderColor: colors.brand,
             alignItems: "center",
           }}
         >
-          <Text style={{ color: "#1A5C38", fontWeight: "700" }}>
+          <Text style={{ color: colors.brand, fontWeight: "700" }}>
             + Add to list
           </Text>
         </TouchableOpacity>
@@ -451,6 +477,12 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
             <Text style={sectionTitle}>
               Slots to apply ({slotTemplates.length})
             </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <Icon name="calendar" size={14} color={colors.accent} />
+              <Text style={{ color: colors.accent, fontWeight: "700", fontSize: 13 }}>
+                {applyDateLabel}
+              </Text>
+            </View>
             {slotTemplates.map((t, idx) => (
               <View
                 key={`${t.start_hour}-${t.end_hour}-${idx}`}
@@ -460,14 +492,14 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
                   justifyContent: "space-between",
                   paddingVertical: 10,
                   borderTopWidth: idx > 0 ? 1 : 0,
-                  borderTopColor: "#F3F5F2",
+                  borderTopColor: colors.border,
                 }}
               >
                 <View>
-                  <Text style={{ fontWeight: "600", color: "#0D1F15" }}>
+                  <Text style={{ fontWeight: "600", color: colors.text }}>
                     {formatSlotRange(t.start_hour, t.end_hour)}
                   </Text>
-                  <Text style={{ color: "#5A7264", fontSize: 12 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                     {t.rate_type === "day" ? "Day" : "Night"} ·{" "}
                     {formatPKR(
                       slotPriceFromTemplate(t, hourlyDay, hourlyNight),
@@ -475,7 +507,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => removeTemplate(idx)}>
-                  <Text style={{ color: "#E34C3C", fontWeight: "600" }}>
+                  <Text style={{ color: colors.danger, fontWeight: "600" }}>
                     Remove
                   </Text>
                 </TouchableOpacity>
@@ -488,7 +520,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
           onPress={handleApplySlots}
           disabled={applySlotsMutation.isPending || slotTemplates.length === 0}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.accent,
             borderRadius: 12,
             paddingVertical: 14,
             alignItems: "center",
@@ -497,9 +529,9 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
           }}
         >
           {applySlotsMutation.isPending ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+            <Text style={{ color: colors.onAccent, fontWeight: "700", fontSize: 15 }}>
               Apply slots to selected date
               {dateMode === "range" ? "s" : ""}
             </Text>
@@ -507,12 +539,16 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
         </TouchableOpacity>
       </View>
 
-      <Text style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 8 }}>
+      <Text style={{ fontWeight: "700", color: colors.text, marginBottom: 8 }}>
         Preview — {format(previewDate, "dd MMM yyyy")}
+      </Text>
+      <Text style={[hint, { marginBottom: 10 }]}>
+        Block closes a slot for maintenance or a private game. Players can't
+        see or book blocked slots. Tap a slot to block or unblock it.
       </Text>
       <View
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderRadius: 14,
           padding: 12,
           marginBottom: 12,
@@ -531,7 +567,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
 
       {previewSlots.length === 0 ? (
         <Text
-          style={{ color: "#5A7264", textAlign: "center", marginBottom: 12 }}
+          style={{ color: colors.textSecondary, textAlign: "center", marginBottom: 12 }}
         >
           No slots for this date. Add slots above and apply to this day.
         </Text>
@@ -546,7 +582,7 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderRadius: 10,
                 padding: 12,
                 marginBottom: 8,
@@ -554,10 +590,10 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
               }}
             >
               <View>
-                <Text style={{ fontWeight: "600", color: "#0D1F15" }}>
+                <Text style={{ fontWeight: "600", color: colors.text }}>
                   {formatSlotRange(slot.start_hour, slot.end_hour)}
                 </Text>
-                <Text style={{ color: "#5A7264", fontSize: 12, marginTop: 2 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
                   {slot.rate_type === "day" ? "Day" : "Night"} ·{" "}
                   {formatPKR(slot.price)}
                 </Text>
@@ -568,10 +604,10 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
                   fontSize: 12,
                   color:
                     slot.status === "available"
-                      ? "#1A5C38"
+                      ? colors.brand
                       : slot.status === "blocked"
-                        ? "#E34C3C"
-                        : "#5A7264",
+                        ? colors.danger
+                        : colors.textSecondary,
                 }}
               >
                 {slot.status === "available"
@@ -592,33 +628,33 @@ export function GroundSlotManager({ groundId, role = "manager" }: Props) {
 
 const sectionTitle = {
   fontWeight: "700" as const,
-  color: "#0D1F15",
+  color: colors.text,
   fontSize: 14,
   marginBottom: 8,
 };
 const fieldLabel = {
-  color: "#5A7264",
+  color: colors.textSecondary,
   fontSize: 12,
   marginBottom: 4,
 };
 const hint = {
-  color: "#A0B4A8",
+  color: colors.textMuted,
   fontSize: 11,
   marginBottom: 8,
   lineHeight: 16,
 };
 const timeHint = {
-  color: "#A0B4A8",
+  color: colors.textMuted,
   fontSize: 10,
   marginTop: 4,
 };
 const inputStyle = {
   borderWidth: 1.5,
-  borderColor: "#E2EAE5",
+  borderColor: colors.border,
   borderRadius: 10,
   paddingHorizontal: 12,
   paddingVertical: 10,
   fontSize: 15,
-  color: "#0D1F15" as const,
-  backgroundColor: "#F3F5F2",
+  color: colors.text,
+  backgroundColor: colors.bg,
 };

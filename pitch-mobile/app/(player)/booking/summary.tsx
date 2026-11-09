@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Modal, ScrollView } from "react-native";
+import { View, TouchableOpacity, Modal, ScrollView } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HoldTimer } from "@/components/booking/HoldTimer";
 import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
 import { formatDate, formatSlotRange, formatPKR } from "@/utils/format";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function BookingSummaryScreen() {
   const params = useLocalSearchParams<{
@@ -46,8 +49,8 @@ export default function BookingSummaryScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#F3F5F2" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: colors.bg }}>
         <View
           style={{
             flexDirection: "row",
@@ -60,11 +63,11 @@ export default function BookingSummaryScreen() {
             onPress={goBackToSlots}
             style={{ marginRight: 12 }}
           >
-            <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-              ←
+            <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+              <Icon name="back" size={20} />
             </Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: "800", color: "#0D1F15" }}>
+          <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>
             Booking Summary
           </Text>
         </View>
@@ -77,14 +80,14 @@ export default function BookingSummaryScreen() {
           {/* Hold timer */}
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               borderRadius: 20,
               padding: 24,
               alignItems: "center",
               marginBottom: 16,
             }}
           >
-            <Text style={{ color: "#5A7264", fontSize: 13, marginBottom: 16 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 16 }}>
               Slot held for
             </Text>
             {params.holdExpiresAt ? (
@@ -93,7 +96,7 @@ export default function BookingSummaryScreen() {
                 onExpired={handleExpired}
               />
             ) : null}
-            <Text style={{ color: "#5A7264", fontSize: 12, marginTop: 12 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 12 }}>
               Complete payment before the timer runs out
             </Text>
           </View>
@@ -101,7 +104,7 @@ export default function BookingSummaryScreen() {
           {/* Booking details */}
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               borderRadius: 20,
               padding: 20,
               marginBottom: 16,
@@ -110,7 +113,7 @@ export default function BookingSummaryScreen() {
             <Text
               style={{
                 fontWeight: "700",
-                color: "#0D1F15",
+                color: colors.text,
                 fontSize: 15,
                 marginBottom: 12,
               }}
@@ -136,9 +139,9 @@ export default function BookingSummaryScreen() {
           left: 0,
           right: 0,
           padding: 16,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#E2EAE5",
+          borderTopColor: colors.border,
         }}
       >
         <TouchableOpacity
@@ -149,14 +152,14 @@ export default function BookingSummaryScreen() {
             } as never)
           }
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.accent,
             borderRadius: 14,
             paddingVertical: 16,
             alignItems: "center",
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-            Pay {formatPKR(advanceAmount)} advance →
+          <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
+            Pay {formatPKR(advanceAmount)} advance <Icon name="forward" size={15} />
           </Text>
         </TouchableOpacity>
       </View>
@@ -174,7 +177,7 @@ export default function BookingSummaryScreen() {
         >
           <View
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               borderRadius: 20,
               padding: 28,
               width: "100%",
@@ -185,25 +188,25 @@ export default function BookingSummaryScreen() {
               style={{
                 fontSize: 18,
                 fontWeight: "800",
-                color: "#0D1F15",
+                color: colors.text,
                 marginTop: 12,
               }}
             >
               Hold expired
             </Text>
-            <Text style={{ color: "#5A7264", marginTop: 8, marginBottom: 20 }}>
+            <Text style={{ color: colors.textSecondary, marginTop: 8, marginBottom: 20 }}>
               Your slot hold has expired. Please go back and reselect a slot.
             </Text>
             <TouchableOpacity
               onPress={handleExpiredConfirm}
               style={{
-                backgroundColor: "#1A5C38",
+                backgroundColor: colors.accent,
                 borderRadius: 12,
                 paddingVertical: 14,
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontWeight: "700" }}>
+              <Text style={{ color: colors.onAccent, fontWeight: "700" }}>
                 Go back to slots
               </Text>
             </TouchableOpacity>
@@ -223,8 +226,8 @@ function Row({ label, value }: { label: string; value: string }) {
         marginBottom: 8,
       }}
     >
-      <Text style={{ color: "#5A7264", fontSize: 14 }}>{label}</Text>
-      <Text style={{ color: "#0D1F15", fontWeight: "600", fontSize: 14 }}>
+      <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: colors.text, fontWeight: "600", fontSize: 14 }}>
         {value}
       </Text>
     </View>

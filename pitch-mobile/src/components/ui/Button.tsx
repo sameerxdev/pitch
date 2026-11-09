@@ -1,11 +1,13 @@
 import React from "react";
 import {
   TouchableOpacity,
-  Text,
   ActivityIndicator,
   TouchableOpacityProps,
   View,
 } from "react-native";
+import { Text } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
+import { hapticTap } from "@/utils/haptics";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -19,29 +21,33 @@ interface ButtonProps extends TouchableOpacityProps {
   icon?: React.ReactNode;
 }
 
-const variantStyles: Record<Variant, { container: string; text: string }> = {
+const variantStyles: Record<Variant, { container: string; text: string; spinner: string }> = {
   primary: {
-    container: "bg-green active:bg-green-dark",
-    text: "text-white font-bold",
+    container: "bg-accent active:bg-accent-pressed",
+    text: "text-accent-on font-extrabold",
+    spinner: colors.onAccent,
   },
   secondary: {
     container: "bg-green-pale border border-green-border active:bg-green-border",
-    text: "text-green font-bold",
+    text: "text-brand font-bold",
+    spinner: colors.brand,
   },
   ghost: {
-    container: "bg-transparent active:bg-pitch-bg",
-    text: "text-green font-medium",
+    container: "bg-transparent active:bg-pitch-raised",
+    text: "text-brand font-medium",
+    spinner: colors.brand,
   },
   danger: {
     container: "bg-red active:opacity-80",
     text: "text-white font-bold",
+    spinner: colors.white,
   },
 };
 
 const sizeStyles: Record<Size, { container: string; text: string }> = {
-  sm: { container: "px-4 py-2 rounded-lg", text: "text-sm" },
-  md: { container: "px-5 py-3 rounded-xl", text: "text-base" },
-  lg: { container: "px-6 py-4 rounded-xl", text: "text-base" },
+  sm: { container: "px-4 py-2 rounded-xl", text: "text-sm" },
+  md: { container: "px-5 py-3 rounded-2xl", text: "text-base" },
+  lg: { container: "px-6 py-4 rounded-2xl", text: "text-base" },
 };
 
 export function Button({
@@ -52,6 +58,7 @@ export function Button({
   fullWidth = false,
   icon,
   disabled,
+  onPress,
   ...props
 }: ButtonProps) {
   const vStyle = variantStyles[variant];
@@ -63,6 +70,10 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={label}
       {...props}
+      onPress={(e) => {
+        hapticTap();
+        onPress?.(e);
+      }}
       disabled={isDisabled}
       className={[
         "flex-row items-center justify-center",
@@ -73,10 +84,7 @@ export function Button({
       ].join(" ")}
     >
       {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === "primary" || variant === "danger" ? "#fff" : "#1A5C38"}
-        />
+        <ActivityIndicator size="small" color={vStyle.spinner} />
       ) : (
         <View className="flex-row items-center gap-2">
           {icon}

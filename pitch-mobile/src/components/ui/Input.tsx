@@ -1,5 +1,7 @@
 import React, { forwardRef } from "react";
-import { View, Text, TextInput, TextInputProps } from "react-native";
+import { View, TextInputInstance, TextInputProps } from "react-native";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { colors } from "@/constants/colors";
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -8,7 +10,7 @@ interface InputProps extends TextInputProps {
   suffix?: React.ReactNode;
 }
 
-export const Input = forwardRef<TextInput, InputProps>(function Input(
+export const Input = forwardRef<TextInputInstance, InputProps>(function Input(
   { label, error, prefix, suffix, ...props },
   ref
 ) {
@@ -19,7 +21,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
       ) : null}
       <View
         className={[
-          "flex-row items-center border rounded-xl bg-white px-4 py-3",
+          "flex-row items-center border rounded-xl bg-pitch-card px-4 py-3",
           error ? "border-red" : "border-pitch-border",
         ].join(" ")}
       >
@@ -28,7 +30,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         ) : null}
         <TextInput
           ref={ref}
-          placeholderTextColor="#A0B4A8"
+          placeholderTextColor={colors.textMuted}
           className="flex-1 text-pitch-text font-sans text-base"
           accessibilityLabel={label}
           {...props}
@@ -36,7 +38,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         {suffix}
       </View>
       {error ? (
-        <Text className="text-red text-xs mt-1">{error}</Text>
+        <Text className="text-red-soft text-xs mt-1">{error}</Text>
       ) : null}
     </View>
   );

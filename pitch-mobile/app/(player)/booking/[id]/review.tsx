@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Alert,
   Image,
@@ -17,6 +15,9 @@ import { submitReview, submitReviewWithPhotos } from "@/api/reviews";
 import { getApiErrorMessage } from "@/api/client";
 import { Config } from "@/constants/config";
 import { useQueryClient } from "@tanstack/react-query";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 const SUB_RATINGS = [
   { key: "rating_pitch" as const, label: "Pitch quality" },
@@ -85,7 +86,7 @@ export default function WriteReviewScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View
         style={{
           flexDirection: "row",
@@ -95,8 +96,8 @@ export default function WriteReviewScreen() {
         }}
       >
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-            ←
+          <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+            <Icon name="back" size={20} />
           </Text>
         </TouchableOpacity>
         <Text
@@ -105,7 +106,7 @@ export default function WriteReviewScreen() {
             textAlign: "center",
             fontSize: 18,
             fontWeight: "800",
-            color: "#0D1F15",
+            color: colors.text,
           }}
         >
           Write a Review
@@ -113,7 +114,7 @@ export default function WriteReviewScreen() {
         <TouchableOpacity
           onPress={() => router.replace("/(player)/bookings" as never)}
         >
-          <Text style={{ color: "#5A7264", fontSize: 13 }}>Later</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Later</Text>
         </TouchableOpacity>
       </View>
 
@@ -121,7 +122,7 @@ export default function WriteReviewScreen() {
         {/* Overall rating */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             alignItems: "center",
@@ -131,7 +132,7 @@ export default function WriteReviewScreen() {
           <Text
             style={{
               fontWeight: "700",
-              color: "#0D1F15",
+              color: colors.text,
               fontSize: 16,
               marginBottom: 16,
             }}
@@ -148,14 +149,14 @@ export default function WriteReviewScreen() {
         {/* Sub ratings */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 16,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 16 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 16 }}
           >
             Detailed Ratings
           </Text>
@@ -169,7 +170,7 @@ export default function WriteReviewScreen() {
                 marginBottom: 14,
               }}
             >
-              <Text style={{ color: "#5A7264", fontSize: 14 }}>{r.label}</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{r.label}</Text>
               <StarRating
                 value={subRatings[r.key] ?? 0}
                 onChange={(v) =>
@@ -184,14 +185,14 @@ export default function WriteReviewScreen() {
         {/* Review text */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 16,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}
           >
             Your Review
           </Text>
@@ -199,7 +200,7 @@ export default function WriteReviewScreen() {
             value={reviewText}
             onChangeText={setReviewText}
             placeholder="What was your experience like? (optional)"
-            placeholderTextColor="#A0B4A8"
+            placeholderTextColor={colors.textMuted}
             multiline
             numberOfLines={5}
             maxLength={1000}
@@ -207,17 +208,17 @@ export default function WriteReviewScreen() {
             accessibilityLabel="Review text"
             style={{
               borderWidth: 1.5,
-              borderColor: "#E2EAE5",
+              borderColor: colors.border,
               borderRadius: 12,
               padding: 12,
               fontSize: 14,
-              color: "#0D1F15",
+              color: colors.text,
               minHeight: 100,
             }}
           />
           <Text
             style={{
-              color: "#A0B4A8",
+              color: colors.textMuted,
               fontSize: 11,
               textAlign: "right",
               marginTop: 4,
@@ -230,14 +231,14 @@ export default function WriteReviewScreen() {
         {/* Photo upload */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 24,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}
           >
             Photos ({photos.length}/{Config.MAX_REVIEW_PHOTOS})
           </Text>
@@ -259,12 +260,12 @@ export default function WriteReviewScreen() {
                     width: 20,
                     height: 20,
                     borderRadius: 10,
-                    backgroundColor: "#E34C3C",
+                    backgroundColor: colors.dangerFill,
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ color: "#fff", fontSize: 12 }}>✕</Text>
+                  <Text style={{ color: colors.white, fontSize: 12 }}><Icon name="close" size={15} /></Text>
                 </TouchableOpacity>
               </View>
             ))}
@@ -279,19 +280,19 @@ export default function WriteReviewScreen() {
                   borderRadius: 10,
                   borderWidth: 2,
                   borderStyle: "dashed",
-                  borderColor: "#C5DFD1",
+                  borderColor: colors.brandBorder,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ color: "#1A5C38", fontSize: 28 }}>+</Text>
+                <Text style={{ color: colors.brand, fontSize: 28 }}>+</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
         {error ? (
-          <Text style={{ color: "#E34C3C", fontSize: 13, marginBottom: 12 }}>
+          <Text style={{ color: colors.danger, fontSize: 13, marginBottom: 12 }}>
             {error}
           </Text>
         ) : null}
@@ -300,7 +301,7 @@ export default function WriteReviewScreen() {
           onPress={handleSubmit}
           disabled={loading}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.accent,
             borderRadius: 14,
             paddingVertical: 16,
             alignItems: "center",
@@ -308,9 +309,9 @@ export default function WriteReviewScreen() {
           }}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
+            <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
               Submit Review
             </Text>
           )}

@@ -161,6 +161,9 @@ export interface ManagerAssignment {
   assigned_at: string;
 }
 
+/** Calendar span an analytics dashboard is showing. */
+export type AnalyticsRange = "day" | "week" | "month";
+
 // ─── Analytics ───────────────────────────────────────────────────────────────
 
 export interface AnalyticsPeriod {
@@ -382,6 +385,17 @@ export interface ApplySlotsResponse {
   days_affected: number;
   slots_per_day: number;
   total_slots_upserted: number;
+  skipped: SkippedSlot[];
+}
+
+/** A requested slot that was not saved, and what it ran into. */
+export interface SkippedSlot {
+  date: string;
+  start_hour: number;
+  end_hour: number;
+  reason: "overlap" | "booked" | "on_hold";
+  conflict_start_hour: number;
+  conflict_end_hour: number;
 }
 
 // Owner

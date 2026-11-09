@@ -1,4 +1,6 @@
+import type { AnalyticsRange } from "@/api/types";
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -163,12 +165,14 @@ export function useRemoveManager(groundId: string) {
 // ─── Analytics & reviews ─────────────────────────────────────────────────────
 
 export function useOwnerAnalytics(
-  period: "today" | "week" | "month",
+  period: AnalyticsRange,
+  anchor: string,
   groundId?: string,
 ) {
   return useQuery({
-    queryKey: ["owner-analytics", period, groundId ?? null],
-    queryFn: () => getOwnerAnalytics({ period, ground_id: groundId }),
+    queryKey: ["owner-analytics", period, anchor, groundId ?? null],
+    queryFn: () => getOwnerAnalytics({ period, anchor, ground_id: groundId }),
+    placeholderData: keepPreviousData,
     refetchInterval: 5 * 60 * 1000,
   });
 }

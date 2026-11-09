@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
   Image,
@@ -15,6 +14,9 @@ import { getApiErrorMessage } from "@/api/client";
 import { formatPKR } from "@/utils/format";
 import { pollPaymentUntilSettled } from "@/utils/pollPayment";
 import type { PaymentMethod } from "@/api/types";
+import { Text } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 const jazzcashLogo = require("@/assets/payment/jazzcash.png");
 const easypaisaLogo = require("@/assets/payment/easypaisa.png");
@@ -103,8 +105,8 @@ export default function PayAdvanceScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: "#F3F5F2" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: colors.bg }}>
         <View
           style={{
             flexDirection: "row",
@@ -117,11 +119,11 @@ export default function PayAdvanceScreen() {
             onPress={goBackToSummary}
             style={{ marginRight: 12 }}
           >
-            <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-              ←
+            <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+              <Icon name="back" size={20} />
             </Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: "800", color: "#0D1F15" }}>
+          <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>
             Pay Advance
           </Text>
         </View>
@@ -131,7 +133,7 @@ export default function PayAdvanceScreen() {
         {/* Amount card */}
         <View
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.primary,
             borderRadius: 20,
             padding: 28,
             alignItems: "center",
@@ -143,7 +145,7 @@ export default function PayAdvanceScreen() {
           </Text>
           <Text
             style={{
-              color: "#FFFFFF",
+              color: colors.white,
               fontSize: 42,
               fontWeight: "900",
               marginTop: 8,
@@ -157,7 +159,7 @@ export default function PayAdvanceScreen() {
         <Text
           style={{
             fontWeight: "700",
-            color: "#0D1F15",
+            color: colors.text,
             fontSize: 15,
             marginBottom: 12,
           }}
@@ -172,7 +174,7 @@ export default function PayAdvanceScreen() {
             accessibilityLabel={opt.label}
             accessibilityState={{ checked: selectedMethod === opt.method }}
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.surface,
               borderRadius: 16,
               padding: 18,
               flexDirection: "row",
@@ -180,7 +182,7 @@ export default function PayAdvanceScreen() {
               marginBottom: 12,
               borderWidth: 2,
               borderColor:
-                selectedMethod === opt.method ? "#1A5C38" : "#E2EAE5",
+                selectedMethod === opt.method ? colors.brand : colors.border,
             }}
           >
             <Image
@@ -197,7 +199,7 @@ export default function PayAdvanceScreen() {
               style={{
                 fontSize: 17,
                 fontWeight: "700",
-                color: "#0D1F15",
+                color: colors.text,
                 flex: 1,
               }}
             >
@@ -209,15 +211,15 @@ export default function PayAdvanceScreen() {
                   width: 24,
                   height: 24,
                   borderRadius: 12,
-                  backgroundColor: "#1A5C38",
+                  backgroundColor: colors.primary,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
                 <Text
-                  style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}
+                  style={{ color: colors.white, fontSize: 14, fontWeight: "700" }}
                 >
-                  ✓
+                  <Icon name="check" size={15} />
                 </Text>
               </View>
             )}
@@ -225,7 +227,7 @@ export default function PayAdvanceScreen() {
         ))}
 
         {error ? (
-          <Text style={{ color: "#E34C3C", fontSize: 13, marginBottom: 12 }}>
+          <Text style={{ color: colors.danger, fontSize: 13, marginBottom: 12 }}>
             {error}
           </Text>
         ) : null}
@@ -239,8 +241,8 @@ export default function PayAdvanceScreen() {
             marginTop: 4,
           }}
         >
-          <Text style={{ fontSize: 16 }}>🔒</Text>
-          <Text style={{ color: "#5A7264", fontSize: 11.5 }}>
+          <Text style={{ fontSize: 16 }}><Icon name="lock" size={15} /></Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 11.5 }}>
             Payments are processed securely. We never store your card details.
           </Text>
         </View>
@@ -249,16 +251,16 @@ export default function PayAdvanceScreen() {
       <View
         style={{
           padding: 16,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#E2EAE5",
+          borderTopColor: colors.border,
         }}
       >
         <TouchableOpacity
           onPress={handlePay}
           disabled={!selectedMethod || loading}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.accent,
             borderRadius: 14,
             paddingVertical: 16,
             alignItems: "center",
@@ -266,11 +268,11 @@ export default function PayAdvanceScreen() {
           }}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
+            <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
               {selectedMethod
-                ? `Pay via ${selectedMethod === "jazzcash" ? "JazzCash" : "Easypaisa"} →`
+                ? `Pay via ${selectedMethod === "jazzcash" ? "JazzCash" : "Easypaisa"}`
                 : "Select a payment method"}
             </Text>
           )}

@@ -1,8 +1,7 @@
 import React, { useState, useRef } from "react";
 import {
   View,
-  Text,
-  TextInput,
+  type TextInputInstance,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,10 @@ import {
 import { requestOtp } from "@/api/auth";
 import { getApiErrorMessage } from "@/api/client";
 import { isValidPakistanPhone, formatPhoneE164 } from "@/utils/validators";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { Icon, IconBadge } from "@/components/ui/Icon";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors, fonts } from "@/constants/colors";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -24,7 +27,7 @@ export default function LoginScreen() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   async function handleSendOtp() {
     const cleaned = phone.replace(/\s/g, "");
@@ -49,7 +52,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#1A5C38" }}>
+    <LinearGradient colors={[colors.primary, colors.hero, colors.bg]} locations={[0, 0.45, 0.8]} style={{ flex: 1 }}>
       <SafeAreaView edges={["top"]} style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -69,13 +72,13 @@ export default function LoginScreen() {
                 paddingBottom: 32,
               }}
             >
-              <Text style={{ fontSize: 56 }}>🏏</Text>
+              <IconBadge name="cricket" size={40} color={colors.accent} background={colors.accentSoft} />
               <Text
                 style={{
-                  color: "#FFFFFF",
-                  fontSize: 42,
-                  fontWeight: "900",
-                  letterSpacing: -1,
+                  color: colors.white,
+                  fontFamily: fonts.display,
+                  fontSize: 68,
+                  letterSpacing: 6,
                   marginTop: 12,
                 }}
               >
@@ -83,7 +86,7 @@ export default function LoginScreen() {
               </Text>
               <Text
                 style={{
-                  color: "rgba(255,255,255,0.7)",
+                  color: colors.textSecondary,
                   fontSize: 16,
                   marginTop: 8,
                 }}
@@ -95,7 +98,7 @@ export default function LoginScreen() {
             {/* Card */}
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.surface,
                 borderTopLeftRadius: 28,
                 borderTopRightRadius: 28,
                 padding: 28,
@@ -106,14 +109,14 @@ export default function LoginScreen() {
                 style={{
                   fontSize: 22,
                   fontWeight: "800",
-                  color: "#0D1F15",
+                  color: colors.text,
                   marginBottom: 6,
                 }}
               >
                 Let's get started
               </Text>
               <Text
-                style={{ color: "#5A7264", fontSize: 14, marginBottom: 24 }}
+                style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 24 }}
               >
                 Enter your mobile number to continue
               </Text>
@@ -124,9 +127,9 @@ export default function LoginScreen() {
                   flexDirection: "row",
                   alignItems: "center",
                   borderWidth: 1.5,
-                  borderColor: error ? "#E34C3C" : "#E2EAE5",
+                  borderColor: error ? colors.danger : colors.border,
                   borderRadius: 14,
-                  backgroundColor: "#F3F5F2",
+                  backgroundColor: colors.bg,
                   paddingHorizontal: 16,
                   marginBottom: 8,
                 }}
@@ -135,13 +138,13 @@ export default function LoginScreen() {
                   style={{
                     paddingRight: 8,
                     borderRightWidth: 1,
-                    borderRightColor: "#E2EAE5",
+                    borderRightColor: colors.border,
                     paddingVertical: 14,
                   }}
                 >
                   <Text
                     style={{
-                      color: "#0D1F15",
+                      color: colors.text,
                       fontWeight: "700",
                       fontSize: 16,
                     }}
@@ -157,7 +160,7 @@ export default function LoginScreen() {
                     setError(null);
                   }}
                   placeholder="3001234567"
-                  placeholderTextColor="#A0B4A8"
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="phone-pad"
                   maxLength={10}
                   returnKeyType="go"
@@ -167,7 +170,7 @@ export default function LoginScreen() {
                     flex: 1,
                     paddingLeft: 12,
                     fontSize: 16,
-                    color: "#0D1F15",
+                    color: colors.text,
                     paddingVertical: 14,
                   }}
                 />
@@ -175,7 +178,7 @@ export default function LoginScreen() {
 
               {error ? (
                 <Text
-                  style={{ color: "#E34C3C", fontSize: 12, marginBottom: 12 }}
+                  style={{ color: colors.danger, fontSize: 12, marginBottom: 12 }}
                 >
                   {error}
                 </Text>
@@ -187,7 +190,7 @@ export default function LoginScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Send OTP"
                 style={{
-                  backgroundColor: "#F5A623",
+                  backgroundColor: colors.accent,
                   borderRadius: 14,
                   paddingVertical: 16,
                   alignItems: "center",
@@ -196,19 +199,19 @@ export default function LoginScreen() {
                 }}
               >
                 {sending ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.onAccent} />
                 ) : (
                   <Text
-                    style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}
+                    style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}
                   >
-                    Send OTP →
+                    Send OTP <Icon name="forward" size={15} />
                   </Text>
                 )}
               </TouchableOpacity>
 
               <Text
                 style={{
-                  color: "#A0B4A8",
+                  color: colors.textMuted,
                   fontSize: 11,
                   textAlign: "center",
                   marginTop: 20,
@@ -216,11 +219,11 @@ export default function LoginScreen() {
                 }}
               >
                 By continuing, you agree to our{" "}
-                <Text style={{ color: "#1A5C38", fontWeight: "600" }}>
+                <Text style={{ color: colors.brand, fontWeight: "600" }}>
                   Terms of Service
                 </Text>{" "}
                 and{" "}
-                <Text style={{ color: "#1A5C38", fontWeight: "600" }}>
+                <Text style={{ color: colors.brand, fontWeight: "600" }}>
                   Privacy Policy
                 </Text>
               </Text>
@@ -228,6 +231,6 @@ export default function LoginScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
+    </LinearGradient>
   );
 }

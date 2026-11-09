@@ -1,5 +1,7 @@
+import { Icon, type IconName } from "@/components/ui/Icon";
 import React, { useEffect, useRef } from "react";
-import { View, Text, Animated } from "react-native";
+import { View, Animated } from "react-native";
+import { Text } from "@/components/ui/Typography";
 
 type ToastType = "success" | "error" | "info";
 
@@ -13,13 +15,13 @@ interface ToastProps {
 const typeStyles: Record<ToastType, string> = {
   success: "bg-green",
   error: "bg-red",
-  info: "bg-pitch-text",
+  info: "bg-pitch-raised",
 };
 
-const typeIcons: Record<ToastType, string> = {
-  success: "✓",
-  error: "✕",
-  info: "ℹ",
+const typeIcons: Record<ToastType, IconName> = {
+  success: "check",
+  error: "close",
+  info: "info",
 };
 
 export function Toast({ message, type = "info", duration = 3000, onDismiss }: ToastProps) {
@@ -48,7 +50,7 @@ export function Toast({ message, type = "info", duration = 3000, onDismiss }: To
       ]}
     >
       <View className={`flex-row items-center rounded-xl px-4 py-3 gap-3 ${typeStyles[type]}`}>
-        <Text className="text-white font-bold">{typeIcons[type]}</Text>
+        <Icon name={typeIcons[type]} size={18} color="#FFFFFF" />
         <Text className="text-white font-medium flex-1">{message}</Text>
       </View>
     </Animated.View>

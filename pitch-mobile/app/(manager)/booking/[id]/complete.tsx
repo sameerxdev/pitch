@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   ActivityIndicator,
   Alert,
@@ -16,6 +14,9 @@ import { getApiErrorMessage } from "@/api/client";
 import { useCompleteBooking } from "@/hooks/useManagerMutations";
 import { formatPKR } from "@/utils/format";
 import type { CompletionPaymentMethod } from "@/api/types";
+import { Text, TextInput } from "@/components/ui/Typography";
+import { Icon } from "@/components/ui/Icon";
+import { colors } from "@/constants/colors";
 
 export default function BookingCompletionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,20 +77,20 @@ export default function BookingCompletionScreen() {
       <SafeAreaView
         style={{
           flex: 1,
-          backgroundColor: "#F3F5F2",
+          backgroundColor: colors.bg,
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <ActivityIndicator size="large" color="#1A5C38" />
+        <ActivityIndicator size="large" color={colors.brand} />
       </SafeAreaView>
     );
   }
 
   if (isFetched && !booking) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2", padding: 24 }}>
-        <Text style={{ color: "#5A7264" }}>Booking not found.</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24 }}>
+        <Text style={{ color: colors.textSecondary }}>Booking not found.</Text>
       </SafeAreaView>
     );
   }
@@ -101,7 +102,7 @@ export default function BookingCompletionScreen() {
   const expectedRemainder = booking.total_price - booking.advance_amount;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F3F5F2" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <View
         style={{
           flexDirection: "row",
@@ -111,8 +112,8 @@ export default function BookingCompletionScreen() {
         }}
       >
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: "#1A5C38", fontWeight: "700", fontSize: 16 }}>
-            ←
+          <Text style={{ color: colors.brand, fontWeight: "700", fontSize: 16 }}>
+            <Icon name="back" size={20} />
           </Text>
         </TouchableOpacity>
         <Text
@@ -121,7 +122,7 @@ export default function BookingCompletionScreen() {
             textAlign: "center",
             fontSize: 18,
             fontWeight: "800",
-            color: "#0D1F15",
+            color: colors.text,
           }}
         >
           Complete Booking
@@ -132,14 +133,14 @@ export default function BookingCompletionScreen() {
         {/* Read-only summary */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 20,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}
           >
             Payment Summary
           </Text>
@@ -152,7 +153,7 @@ export default function BookingCompletionScreen() {
             value={formatPKR(booking.total_price)}
           />
           <View
-            style={{ height: 1, backgroundColor: "#E2EAE5", marginVertical: 8 }}
+            style={{ height: 1, backgroundColor: colors.surfaceRaised, marginVertical: 8 }}
           />
           <ReadOnlyRow
             label="Expected remainder"
@@ -164,14 +165,14 @@ export default function BookingCompletionScreen() {
         {/* Payment method */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 20,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 12 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 12 }}
           >
             Payment Method Received
           </Text>
@@ -186,20 +187,20 @@ export default function BookingCompletionScreen() {
                   padding: 14,
                   borderRadius: 12,
                   borderWidth: 2,
-                  borderColor: paymentMethod === method ? "#1A5C38" : "#E2EAE5",
+                  borderColor: paymentMethod === method ? colors.brand : colors.border,
                   backgroundColor:
-                    paymentMethod === method ? "#E8F3EE" : "#FFFFFF",
+                    paymentMethod === method ? colors.brandSoft : colors.surface,
                   marginBottom: 8,
                 }}
               >
                 <Text style={{ fontSize: 20, marginRight: 12 }}>
-                  {method === "cash" ? "💵" : "🏦"}
+                  <Icon name={method === "cash" ? "cash" : "bank"} size={20} />
                 </Text>
-                <Text style={{ fontWeight: "600", color: "#0D1F15", flex: 1 }}>
+                <Text style={{ fontWeight: "600", color: colors.text, flex: 1 }}>
                   {method === "cash" ? "Cash" : "Bank Transfer"}
                 </Text>
                 {paymentMethod === method && (
-                  <Text style={{ color: "#1A5C38", fontWeight: "700" }}>✓</Text>
+                  <Text style={{ color: colors.brand, fontWeight: "700" }}><Icon name="check" size={15} /></Text>
                 )}
               </TouchableOpacity>
             ),
@@ -209,18 +210,18 @@ export default function BookingCompletionScreen() {
         {/* Actual amount */}
         <View
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: colors.surface,
             borderRadius: 20,
             padding: 20,
             marginBottom: 20,
           }}
         >
           <Text
-            style={{ fontWeight: "700", color: "#0D1F15", marginBottom: 4 }}
+            style={{ fontWeight: "700", color: colors.text, marginBottom: 4 }}
           >
             Amount Actually Received
           </Text>
-          <Text style={{ color: "#5A7264", fontSize: 12, marginBottom: 12 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 12 }}>
             Enter the actual amount received. This may differ from the expected
             remainder.
           </Text>
@@ -229,14 +230,14 @@ export default function BookingCompletionScreen() {
               flexDirection: "row",
               alignItems: "center",
               borderWidth: 1.5,
-              borderColor: "#E2EAE5",
+              borderColor: colors.border,
               borderRadius: 12,
               paddingHorizontal: 16,
-              backgroundColor: "#F3F5F2",
+              backgroundColor: colors.bg,
             }}
           >
             <Text
-              style={{ color: "#5A7264", fontWeight: "600", marginRight: 8 }}
+              style={{ color: colors.textSecondary, fontWeight: "600", marginRight: 8 }}
             >
               PKR
             </Text>
@@ -244,7 +245,7 @@ export default function BookingCompletionScreen() {
               value={amountReceived}
               onChangeText={setAmountReceived}
               placeholder={String(expectedRemainder)}
-              placeholderTextColor="#A0B4A8"
+              placeholderTextColor={colors.textMuted}
               keyboardType="decimal-pad"
               accessibilityLabel="Amount received input"
               style={{
@@ -252,14 +253,14 @@ export default function BookingCompletionScreen() {
                 paddingVertical: 14,
                 fontSize: 18,
                 fontWeight: "700",
-                color: "#0D1F15",
+                color: colors.text,
               }}
             />
           </View>
         </View>
 
         {error && (
-          <Text style={{ color: "#E34C3C", fontSize: 13, marginBottom: 12 }}>
+          <Text style={{ color: colors.danger, fontSize: 13, marginBottom: 12 }}>
             {error}
           </Text>
         )}
@@ -268,7 +269,7 @@ export default function BookingCompletionScreen() {
           onPress={handleComplete}
           disabled={completeMutation.isPending}
           style={{
-            backgroundColor: "#1A5C38",
+            backgroundColor: colors.accent,
             borderRadius: 14,
             paddingVertical: 16,
             alignItems: "center",
@@ -276,10 +277,10 @@ export default function BookingCompletionScreen() {
           }}
         >
           {completeMutation.isPending ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
-              Complete Booking ✓
+            <Text style={{ color: colors.onAccent, fontWeight: "800", fontSize: 16 }}>
+              Complete Booking <Icon name="check" size={15} />
             </Text>
           )}
         </TouchableOpacity>
@@ -305,10 +306,10 @@ function ReadOnlyRow({
         marginBottom: 8,
       }}
     >
-      <Text style={{ color: "#5A7264", fontSize: 14 }}>{label}</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{label}</Text>
       <Text
         style={{
-          color: highlight ? "#1A5C38" : "#0D1F15",
+          color: highlight ? colors.brand : colors.text,
           fontWeight: "600",
           fontSize: 14,
         }}
